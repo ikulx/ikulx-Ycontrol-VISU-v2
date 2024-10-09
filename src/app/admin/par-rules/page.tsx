@@ -1,4 +1,4 @@
-"use client"; // Markiert diese Datei als Client-Komponente
+"use client"; 
 
 import { Select, Form, Input, Button, Radio, Table, Popconfirm, message, Modal } from 'antd';
 import React, { useState, useEffect } from 'react';
