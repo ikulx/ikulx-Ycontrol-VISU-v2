@@ -12,7 +12,7 @@ export async function GET(request: Request, { params }: { params: { hklId: strin
 
     // Daten aus der Datenbank abrufen, basierend auf dem HKL-Wert (hklId)
     const data = await db.all(
-      `SELECT id, NAME, VAR_VALUE, unit, HKL_Feld, MIN, MAX
+      `SELECT id, NAME, VAR_VALUE, unit, HKL_Feld, MIN, MAX, OPTI, TYPE
        FROM QHMI_VARIABLES 
        WHERE HKL = ? `,
       [hklId]

@@ -18,7 +18,9 @@ export async function POST(request: Request) {
       [VAR_VALUE, new Date().toISOString(), id]
     );
 
-    if (result.changes > 0) {
+    if (result && result.changes !== undefined && result.changes > 0) {
+
+    
       console.log('Wert erfolgreich in der DB aktualisiert:', { id, VAR_VALUE });
       return NextResponse.json({ message: 'VAR_VALUE erfolgreich aktualisiert' });
     } else {

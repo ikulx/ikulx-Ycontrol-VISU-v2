@@ -9,6 +9,8 @@
 // ID 10 = VL MIN
 // ID 11 = VL MAX
 
+// ID 20 = Kühlen
+
 import { useState, useEffect } from "react";
 import { Card, Modal, Input } from "antd";
 import { useSearchParams } from "next/navigation";
@@ -91,18 +93,38 @@ export default function HklPage() {
   };
 
   return (
-    <div style={{ position: "relative", width: "100vw", height: "100vh" }}>
-      <Card style={{ width: "100%", height: "100%", position: "relative" }}>
-        {/* Responsive SVG with buttons */}
-        <svg
-          width="100%"
-          height="100%"
-          viewBox="0 0 818 418"
-          fill="none"
-          xmlns="http://www.w3.org/2000/svg"
-          style={{ position: "absolute", top: 0, left: 0 }}
-          preserveAspectRatio="xMidYMid meet"
-        >
+    <div
+  style={{
+    position: "absolute",  // Fixiert das Element über den gesamten Bildschirm
+    top: 0,
+    left: 0,
+    width: "100vw",  // Volle Breite des Bildschirms
+    height: "100vh", // Volle Höhe des Bildschirms
+    display: "flex", // Flexbox zum Zentrieren des Inhalts
+    justifyContent: "center", // Zentriere horizontal
+    alignItems: "center",     // Zentriere vertikal
+    padding: "0px",
+    margin: "0px",
+    overflow: "hidden",  // Verhindere Scrollen
+    boxSizing: "border-box",
+  }}
+>
+  <svg
+    width="100%"  // Setze Breite auf 100% des Eltern-Containers
+    height="100%" // Setze Höhe auf 100% des Eltern-Containers
+    viewBox="0 0 818 458"  // Hier kannst du die Abmessungen deines SVGs definieren
+    fill="none"
+    xmlns="http://www.w3.org/2000/svg"
+    preserveAspectRatio="xMidYMid meet"  // Behalte das Seitenverhältnis bei
+    style={{
+      display: "block",  // SVG blockweise anzeigen
+      width: "100%",  // Setze Breite und Höhe auf 100%, um sich an den Container anzupassen
+      height: "100%",
+    }}
+  >
+ 
+
+
           <g id="Frame 15315">
             <rect width="818" height="458" fill="black" />
             {/* Other SVG elements here */}
@@ -259,6 +281,7 @@ export default function HklPage() {
 
               {/* Add similar blocks for Button 2 to 6 */}
             </g>
+            {data.find((param) => param.HKL_Feld === "20")?.VAR_VALUE !== "1" && (
             <g id="Freigabe K&#195;&#188;hlen">
               <rect
                 id="Rectangle 1"
@@ -305,7 +328,7 @@ export default function HklPage() {
                   Totband
                 </tspan>
               </text>
-            </g>
+            </g>)}
             <g id="Freigabe Heizen">
               <rect
                 id="Rectangle 1_2"
@@ -335,33 +358,43 @@ export default function HklPage() {
               </text>
             </g>
             <g id="Frame 8">
+              {/* VL Min */}
               <text
                 id="VL Min"
                 fill="white"
                 font-size="12"
+                font-family="Arial"
                 letter-spacing="0em"
               >
                 <tspan x="256" y="61.8636">
                   VL Min:{" "}
+                </tspan>
+                <tspan font-weight="900">
                   {data.find((param) => param.HKL_Feld === "11")?.VAR_VALUE ||
-                    " NA"}{" "}
+                    "NA"}{" "}
                   {data.find((param) => param.HKL_Feld === "11")?.unit || ""}
                 </tspan>
               </text>
+
+              {/* VL Max */}
               <text
                 id="VL Max"
                 fill="white"
                 font-size="12"
+                font-family="Arial"
                 letter-spacing="0em"
               >
                 <tspan x="411" y="61.8636">
                   VL Max:{" "}
+                </tspan>
+                <tspan font-weight="900">
                   {data.find((param) => param.HKL_Feld === "12")?.VAR_VALUE ||
-                    " NA"}{" "}
+                    "NA"}{" "}
                   {data.find((param) => param.HKL_Feld === "12")?.unit || ""}
                 </tspan>
               </text>
             </g>
+
             <g id="Group">
               <path
                 id="Vector_2"
@@ -494,7 +527,7 @@ export default function HklPage() {
             onDelete={handleDeleteInput}
           />
         </Modal>
-      </Card>
+
     </div>
   );
 }
