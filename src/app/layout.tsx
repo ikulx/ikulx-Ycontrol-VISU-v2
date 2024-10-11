@@ -58,6 +58,9 @@ export default function RootLayout({ children }: LayoutProps) {
 
   return (
     <html lang="en">
+      <head>
+        <title>Ycontrol</title>
+      </head>
       <body style={{overflow: "hidden"}}>
         <ConfigProvider
           theme={{

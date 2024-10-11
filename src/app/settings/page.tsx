@@ -375,7 +375,7 @@ export default function SettingsPage() {
   return (
     <Layout style={{ height: '100vh', overflow: 'hidden', backgroundColor: '#1f1f1f' }}>
       {screens.md && (
-        <Sider width={250} style={{ background: '#1f1f1f', overflowY: 'auto' }}>
+        <Sider width={250} style={{ background: '#1f1f1f', overflowY: 'auto',  height: '97vh', }}>
           <Menu
             mode="inline"
             theme="dark"
@@ -519,7 +519,7 @@ export default function SettingsPage() {
                   ]}
                   dataSource={data}
                   pagination={false}
-                  scroll={{ x: 'max-content', y: 'calc(100vh - 180px)' }}
+                  scroll={{ x: 'max-content', y: 'calc(100vh - 120px)' }}
                   rowKey="id"
                   style={{ flex: 1 }}
                 />
@@ -557,7 +557,7 @@ export default function SettingsPage() {
         >
           {selectedRow.TYPE === 'drop' && (
             <>
-              <Dropdown
+              <Dropdown trigger={['click']}
                 overlay={
                   <Menu onClick={({ key }) => handleDropdownSelect(key)}>
                     {getLocalizedText(selectedRow, 'OPTI')?.split(',').map((opt) => {
