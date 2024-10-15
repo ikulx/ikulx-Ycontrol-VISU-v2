@@ -34,6 +34,9 @@ import useBreakpoint from 'antd/lib/grid/hooks/useBreakpoint';
 const { Content, Sider } = Layout;
 const { SubMenu } = Menu;
 
+// Base Path aus Umgebungsvariable
+const basePath = process.env.NEXT_PUBLIC_BASE_PATH || '';
+
 interface DataItem {
   id: number;
   NAME: string;
@@ -138,7 +141,7 @@ export default function SettingsPage() {
   // Effekt zum Abrufen der Tags
   useEffect(() => {
     const fetchTags = async () => {
-      let endpoint = '/api/settings/tags';
+      let endpoint = `${basePath}/api/settings/tags`;
       const params = new URLSearchParams();
 
       if (user) {
@@ -187,7 +190,7 @@ export default function SettingsPage() {
           selectedTags.sub && selectedTags.sub.trim() !== ''
             ? `/${encodeURIComponent(selectedTags.sub)}`
             : '';
-        let endpoint = `/api/settings/data/${encodedTop}${subPath}`;
+        let endpoint = `${basePath}/api/settings/data/${encodedTop}${subPath}`;
         const params = new URLSearchParams();
 
         if (user) {
@@ -247,7 +250,7 @@ export default function SettingsPage() {
   const handleSave = async () => {
     if (selectedRow) {
       try {
-        const response = await fetch('/api/editor/update', {
+        const response = await fetch(`${basePath}/api/editor/update`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ id: selectedRow.id, VAR_VALUE: newValue }),

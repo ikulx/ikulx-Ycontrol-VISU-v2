@@ -33,12 +33,16 @@ const RulePage = () => {
   const [editId, setEditId] = useState<number | null>(null);
   const [isModalVisible, setIsModalVisible] = useState(false); // Steuert die Sichtbarkeit des Modals
 
+   // Base Path aus Umgebungsvariable
+   const basePath = process.env.NEXT_PUBLIC_BASE_PATH || '';
+
+
   // Daten laden
   const fetchData = async () => {
     setLoading(true);
-    const paramRes = await fetch('/api/parameters');
-    const editorRes = await fetch('/api/editors');
-    const rulesRes = await fetch('/api/rules');
+    const paramRes = await fetch(`${basePath}/api/parameters`);
+    const editorRes = await fetch(`${basePath}/api/editors`);
+    const rulesRes = await fetch(`${basePath}/api/rules`);
 
     const paramData: Parameter[] = await paramRes.json();
     const editorData: Editor[] = await editorRes.json();
@@ -57,7 +61,7 @@ const RulePage = () => {
   // Regel hinzufügen oder bearbeiten
   const handleSubmit = async (values: any) => {
     const method = editId ? 'PUT' : 'POST';
-    const url = editId ? `/api/rules/${editId}` : '/api/rules';
+    const url = editId ? `${basePath}/api/rules/${editId}` : `${basePath}/api/rules`;
     
     try {
       const res = await fetch(url, {
@@ -99,7 +103,7 @@ const RulePage = () => {
   // Regel löschen
   const handleDelete = async (id: number) => {
     try {
-      const res = await fetch(`/api/rules/${id}`, {
+      const res = await fetch(`${basePath}/api/rules/${id}`, {
         method: 'DELETE',
       });
 
