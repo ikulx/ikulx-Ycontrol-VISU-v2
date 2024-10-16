@@ -185,15 +185,28 @@ export default function SettingsPage() {
       }
       return acc;
     }, {});
-
-    return Object.entries(groupedTags).map(([top, subs]) => (
+  
+    // Sortiere die `top`-Level-Menüs alphabetisch
+    const sortedTopLevelTags = Object.entries(groupedTags).sort(([a], [b]) => a.localeCompare(b));
+  
+    return sortedTopLevelTags.map(([top, subs]) => (
       subs.length > 0 ? (
         <SubMenu key={top} title={top}>
-          {subs.map((sub) => <Menu.Item key={`${top}/${sub}`} onClick={() => setSelectedTags({ top, sub })}>{sub}</Menu.Item>)}
+          {/* Sortiere die `sub`-Menüs alphabetisch */}
+          {subs.sort((a, b) => a.localeCompare(b)).map((sub) => (
+            <Menu.Item key={`${top}/${sub}`} onClick={() => setSelectedTags({ top, sub })}>
+              {sub}
+            </Menu.Item>
+          ))}
         </SubMenu>
-      ) : <Menu.Item key={top} onClick={() => setSelectedTags({ top })}>{top}</Menu.Item>
+      ) : (
+        <Menu.Item key={top} onClick={() => setSelectedTags({ top })}>
+          {top}
+        </Menu.Item>
+      )
     ));
   };
+  
 
   return (
     
@@ -275,7 +288,14 @@ export default function SettingsPage() {
 
       {/* Modal zum Bearbeiten */}
       {selectedRow && (
-        <Modal title={getLocalizedText(selectedRow, 'NAME')} open={modalVisible} onCancel={() => setModalVisible(false)} footer={null} centered width="60%">
+        <Modal 
+        title={getLocalizedText(selectedRow, 'NAME')} 
+        open={modalVisible} onCancel={() => setModalVisible(false)} 
+        footer={[
+        <Button type="primary" size="large" icon={<SaveOutlined />} onClick={handleSave}></Button>,
+        <Button size="large" icon={<CloseOutlined />} onClick={() => setModalVisible(false)}></Button>]} 
+        centered width="60%" >
+
           {selectedRow.TYPE === 'drop' && (
             <p><Dropdown trigger={['click']} overlay={
               <Menu onClick={({ key }) => setNewValue(key)}>
@@ -308,8 +328,6 @@ export default function SettingsPage() {
             </>
           )}
 
-          <p><Button type="primary" icon={<SaveOutlined />} onClick={handleSave}>{ui.save}</Button>
-          <Button style={{ marginLeft: '10px' }} icon={<CloseOutlined />} onClick={() => setModalVisible(false)}>{ui.cancel}</Button></p>
         </Modal>
       )}
 

@@ -42,7 +42,7 @@ export default async function HklPage({ params }: { params: { hklId: string } })
       [hklId]
     );
 
-    return <HklClientComponent data={data} hklId={hklId} />;
+    return <body style={{backgroundColor: "black"}}><HklClientComponent data={data} hklId={hklId} /></body>;
   } catch (error) {
     console.error('Fehler beim Abrufen der Daten:', error);
     return <div>Fehler beim Abrufen der Daten</div>;

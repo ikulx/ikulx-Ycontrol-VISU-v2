@@ -1,3 +1,4 @@
+// src/app/api/sse/route.ts
 import { NextResponse } from 'next/server';
 import { openDB } from '@/lib/db';
 
@@ -14,14 +15,12 @@ export async function GET(req: Request) {
     start(controller) {
       const send = async () => {
         try {
-          // Query, um alle VAR_VALUE und die zugehörigen IDs abzurufen
           const query = `
             SELECT id, VAR_VALUE 
             FROM QHMI_VARIABLES
           `;
           const data = await db.all(query);
 
-          // Sende die Daten als JSON über den SSE-Stream
           controller.enqueue(`data: ${JSON.stringify(data)}\n\n`);
         } catch (error) {
           console.error('Fehler beim Abrufen der Daten:', error);
@@ -29,10 +28,8 @@ export async function GET(req: Request) {
         }
       };
 
-      // Sende Daten alle 5 Sekunden
       const interval = setInterval(send, 5000);
 
-      // Clean up, wenn die Verbindung abgebrochen wird
       const cleanup = () => {
         clearInterval(interval);
         controller.close();

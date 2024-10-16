@@ -19,7 +19,7 @@
 import { useState, useEffect } from 'react';
 import { Modal, Input, Dropdown, Button, Spin, ConfigProvider, theme } from "antd";
 import type { MenuProps } from "antd";
-import { DownOutlined } from "@ant-design/icons";
+import { DownOutlined, SaveOutlined, CloseOutlined } from "@ant-design/icons";
 import { VirtualKeyboard } from "./VirtualKeyboard"; // Ensure this path is correct
 
 interface DataItem {
@@ -375,6 +375,20 @@ export default function HklClientComponent({ data: initialData, hklId }: { data:
           setIsEditing(false);
         }}
         onOk={handleSave}
+        footer={[
+          
+          <Button icon={<SaveOutlined />} size="large" key="submit" type="primary" onClick={handleSave}>
+            
+          </Button>,
+
+          <Button key="back" size="large" icon={<CloseOutlined />} onClick={() => {
+            setIsModalVisible(false);
+            setIsEditing(false);
+          }}>
+
+          </Button>,
+
+        ]}
       >
         <p>
           Min: {selectedParam?.MIN}, Max: {selectedParam?.MAX}
@@ -382,11 +396,13 @@ export default function HklClientComponent({ data: initialData, hklId }: { data:
         <Input
           value={newValue}
           onChange={(e) => setNewValue(e.target.value)}
+          suffix={selectedParam?.unit}
         />
         <VirtualKeyboard
           onInput={(input: string) => setNewValue(newValue + input)}
           onDelete={() => setNewValue(newValue.slice(0, -1))}
         />
+        
       </Modal>
 
       {/* Dropdown Popup */}
