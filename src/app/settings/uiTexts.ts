@@ -1,0 +1,53 @@
+const uiText = {
+    de: {
+      menu: 'Menü',
+      save: 'Speichern',
+      cancel: 'Abbrechen',
+      description: 'Beschreibung',
+      select: 'Auswählen',
+      parameter: 'Parameter',
+      value: 'Wert',
+      loading: 'Lädt...',
+      errorFetchingTags: 'Es konnten keine Parameter abgerufen werden.',
+      errorFetchingData: 'Es konnten keine Daten abgerufen werden.',
+    },
+    fr: {
+      menu: 'Menu',
+      save: 'Enregistrer',
+      cancel: 'Annuler',
+      description: 'Description',
+      select: 'Sélectionner',
+      parameter: 'Paramètre',
+      value: 'Valeur',
+      loading: 'Chargement...',
+      errorFetchingTags: 'Impossible de récupérer les paramètres.',
+      errorFetchingData: 'Impossible de récupérer les données.',
+    },
+    en: {
+      menu: 'Menu',
+      save: 'Save',
+      cancel: 'Cancel',
+      description: 'Description',
+      select: 'Select',
+      parameter: 'Parameter',
+      value: 'Value',
+      loading: 'Loading...',
+      errorFetchingTags: 'Unable to fetch parameters.',
+      errorFetchingData: 'Unable to fetch data.',
+    },
+    it: {
+      menu: 'Menu',
+      save: 'Salva',
+      cancel: 'Annulla',
+      description: 'Descrizione',
+      select: 'Seleziona',
+      parameter: 'Parametro',
+      value: 'Valore',
+      loading: 'Caricamento...',
+      errorFetchingTags: 'Impossibile recuperare i parametri.',
+      errorFetchingData: 'Impossibile recuperare i dati.',
+    },
+  };
+  
+  export default uiText;
+  

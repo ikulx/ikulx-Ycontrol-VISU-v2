@@ -17,7 +17,7 @@
 // ID 20 = Kühlen
 
 import { useState, useEffect } from 'react';
-import { Modal, Input, Dropdown, Button, Spin } from "antd";
+import { Modal, Input, Dropdown, Button, Spin, ConfigProvider, theme } from "antd";
 import type { MenuProps } from "antd";
 import { DownOutlined } from "@ant-design/icons";
 import { VirtualKeyboard } from "./VirtualKeyboard"; // Ensure this path is correct
@@ -202,22 +202,8 @@ export default function HklClientComponent({ data: initialData, hklId }: { data:
   };
 
   return (
-    <div
-      style={{
-        position: "absolute",
-        top: 0,
-        left: 0,
-        width: "100vw",
-        height: "100vh",
-        display: "flex",
-        justifyContent: "center",
-        alignItems: "center",
-        padding: "0px",
-        margin: "0px",
-        overflow: "hidden",
-        boxSizing: "border-box",
-      }}
-    >
+
+    <ConfigProvider theme={{ algorithm: theme.darkAlgorithm }} >
       <svg
         width="100%"
         height="100%"
@@ -423,6 +409,6 @@ export default function HklClientComponent({ data: initialData, hklId }: { data:
           </Dropdown>
         )}
       </Modal>
-    </div>
+      </ConfigProvider>
   );
 }
