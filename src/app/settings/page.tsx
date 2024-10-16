@@ -378,7 +378,7 @@ export default function SettingsPage() {
   return (
     <Layout style={{ height: '100vh', overflow: 'hidden', backgroundColor: '#1f1f1f' }}>
       {screens.md && (
-        <Sider width={250} style={{ background: '#1f1f1f', overflowY: 'auto',  height: '97vh', }}>
+        <Sider width={200} style={{ background: '#1f1f1f', overflowY: 'auto',  height: '97vh', }}>
           <Menu
             mode="inline"
             theme="dark"
