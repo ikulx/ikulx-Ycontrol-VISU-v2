@@ -1,8 +1,22 @@
+# .dockerignore
+
+# Node modules
 node_modules
-npm-debug.log
-Dockerfile
-.dockerignore
+
+# Local environment files
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Git
 .git
 .gitignore
-.env
-.env.local
+
+# Docker files
+Dockerfile
+docker-compose.yml
+
+# Build directories
+.next
+out
