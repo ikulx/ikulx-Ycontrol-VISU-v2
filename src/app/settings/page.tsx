@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import {
-  ConfigProvider, Menu, Layout, Table, Input, Dropdown, Button, Typography, Card, Modal, Drawer, Breadcrumb, Tooltip, Spin, Alert,theme
+  ConfigProvider, Menu, Layout, Table, Input, Dropdown, Button, Typography, Card, Modal, Drawer, Breadcrumb, Tooltip, Spin, Alert, theme
 } from 'antd';
 import { useSearchParams } from 'next/navigation';
 import { MenuOutlined, CloseOutlined, SaveOutlined, DownOutlined, InfoCircleOutlined } from '@ant-design/icons';
@@ -11,10 +11,8 @@ import { SwissKeyboard } from './SwissKeyboard';
 import useBreakpoint from 'antd/lib/grid/hooks/useBreakpoint';
 import { unit } from '@ant-design/cssinjs';
 
-
 // Base Path aus Umgebungsvariable
 const basePath = process.env.NEXT_PUBLIC_BASE_PATH || '';
-
 
 const { Content, Sider } = Layout;
 const { SubMenu } = Menu;
@@ -38,8 +36,59 @@ interface Tag {
 
 // UI-Text Übersetzungen
 const uiText = {
-  de: { menu: 'Menü', save: 'Speichern', cancel: 'Abbrechen', description: 'Beschreibung', select: 'Auswählen', parameter: 'Parameter', value: 'Wert', loading: 'Lädt...', errorFetchingTags: 'Es konnten keine Parameter abgerufen werden.', errorFetchingData: 'Es konnten keine Daten abgerufen werden.' },
-  // Weitere Sprachen...
+  de: {
+    menu: 'Menü',
+    save: 'Speichern',
+    cancel: 'Abbrechen',
+    description: 'Beschreibung',
+    select: 'Auswählen',
+    parameter: 'Parameter',
+    value: 'Wert',
+    loading: 'Lädt...',
+    errorFetchingTags: 'Es konnten keine Parameter abgerufen werden.',
+    errorFetchingData: 'Es konnten keine Daten abgerufen werden.',
+    errorNoUser: 'Kein Benutzer angegeben.',
+  },
+  fr: {
+    menu: 'Menu',
+    save: 'Enregistrer',
+    cancel: 'Annuler',
+    description: 'Description',
+    select: 'Sélectionner',
+    parameter: 'Paramètre',
+    value: 'Valeur',
+    loading: 'Chargement...',
+    errorFetchingTags: 'Impossible de récupérer les paramètres.',
+    errorFetchingData: 'Impossible de récupérer les données.',
+    errorNoUser: 'Kein Benutzer angegeben.',
+  },
+  en: {
+    menu: 'Menu',
+    save: 'Save',
+    cancel: 'Cancel',
+    description: 'Description',
+    select: 'Select',
+    parameter: 'Parameter',
+    value: 'Value',
+    loading: 'Loading...',
+    errorFetchingTags: 'Unable to fetch parameters.',
+    errorFetchingData: 'Unable to fetch data.',
+    errorNoUser: 'Kein Benutzer angegeben.',
+  },
+  it: {
+    menu: 'Menu',
+    save: 'Salva',
+    cancel: 'Annulla',
+    description: 'Descrizione',
+    select: 'Seleziona',
+    parameter: 'Parametro',
+    value: 'Valore',
+    loading: 'Caricamento...',
+    errorFetchingTags: 'Impossibile recuperare i parametri.',
+    errorFetchingData: 'Impossibile recuperare i dati.',
+    errorNoUser: 'Kein Benutzer angegeben.',
+  },
+
 };
 
 export default function SettingsPage() {
@@ -56,6 +105,7 @@ export default function SettingsPage() {
   const [loadingData, setLoadingData] = useState<boolean>(false);
   const [errorTags, setErrorTags] = useState<string | null>(null);
   const [errorData, setErrorData] = useState<string | null>(null);
+  const [userError, setUserError] = useState<string | null>(null); // Fehler für fehlenden Benutzer
 
   const screens = useBreakpoint();
   const searchParams = useSearchParams();
@@ -65,14 +115,19 @@ export default function SettingsPage() {
   const lang = searchParams.get('lang') || 'de';
   const ui = uiText[lang as keyof typeof uiText];
 
-  const {  darkAlgorithm } = theme;
+  const { darkAlgorithm } = theme;
 
+  // Prüfen, ob Benutzer vorhanden ist
+  useEffect(() => {
+    if (!user) {
+      setUserError(ui.errorNoUser);
+    }
+  }, [user, ui]);
 
-
-
-
-  // Tags abrufen
+  // Tags abrufen (nur wenn Benutzer vorhanden)
   const fetchTags = async () => {
+    if (!user) return; // Verhindere API-Aufrufe, wenn kein Benutzer vorhanden ist
+
     try {
       const params = new URLSearchParams(user ? { user } : { noUser: 'true' });
       const response = await fetch(`${basePath}/api/settings/tags?${params.toString()}`);
@@ -87,50 +142,58 @@ export default function SettingsPage() {
   };
 
   useEffect(() => {
-    setLoadingTags(true);
-    fetchTags();
-  }, [user, ui]);
+    if (!userError) {
+      setLoadingTags(true);
+      fetchTags();
+    }
+  }, [userError, user, ui]);
 
   useEffect(() => {
-    if (initialTop) {
+    if (initialTop && !userError) {
       setSelectedTags({ top: initialTop, sub: initialSub || undefined });
     }
-  }, [initialTop, initialSub]);
+  }, [initialTop, initialSub, userError]);
 
-  // SSE zur Datenaktualisierung
+  // SSE zur Datenaktualisierung (nur wenn Benutzer vorhanden)
   useEffect(() => {
-    const eventSource = new EventSource(`${basePath}/api/sse`);
-    eventSource.onmessage = (event) => {
-      const newData = JSON.parse(event.data);
-      if (Array.isArray(newData)) {
-        setData((prevData) => prevData.map((item) => {
-          const updatedItem = newData.find((d: { id: number }) => d.id === item.id);
-          return updatedItem ? { ...item, VAR_VALUE: updatedItem.VAR_VALUE } : item;
-        }));
-      }
-    };
+    if (!userError) {
+      const eventSource = new EventSource(`${basePath}/api/sse`);
+      eventSource.onmessage = (event) => {
+        const newData = JSON.parse(event.data);
+        if (Array.isArray(newData)) {
+          setData((prevData) =>
+            prevData.map((item) => {
+              const updatedItem = newData.find((d: { id: number }) => d.id === item.id);
+              return updatedItem ? { ...item, VAR_VALUE: updatedItem.VAR_VALUE } : item;
+            })
+          );
+        }
+      };
 
-    eventSource.onerror = () => eventSource.close();
-    return () => eventSource.close();
-  }, []);
+      eventSource.onerror = () => eventSource.close();
+      return () => eventSource.close();
+    }
+  }, [userError]);
 
   const fetchData = useCallback(async () => {
-    if (selectedTags) {
-      try {
-        const endpoint = `${basePath}/api/settings/data/${encodeURIComponent(selectedTags.top)}${selectedTags.sub ? `/${encodeURIComponent(selectedTags.sub)}` : ''}`;
-        const params = new URLSearchParams(user ? { user, lang } : { noUser: 'true', lang });
-        setLoadingData(true);
-        const response = await fetch(`${endpoint}?${params}`);
-        if (!response.ok) throw new Error('Fehler beim Abrufen der Daten');
-        const data = await response.json();
-        setData(data);
-        setLoadingData(false);
-      } catch (error) {
-        setErrorData(ui.errorFetchingData);
-        setLoadingData(false);
-      }
+    if (!selectedTags || userError) return;
+
+    try {
+      const endpoint = `${basePath}/api/settings/data/${encodeURIComponent(selectedTags.top)}${
+        selectedTags.sub ? `/${encodeURIComponent(selectedTags.sub)}` : ''
+      }`;
+      const params = new URLSearchParams(user ? { user, lang } : { noUser: 'true', lang });
+      setLoadingData(true);
+      const response = await fetch(`${endpoint}?${params}`);
+      if (!response.ok) throw new Error('Fehler beim Abrufen der Daten');
+      const data = await response.json();
+      setData(data);
+      setLoadingData(false);
+    } catch (error) {
+      setErrorData(ui.errorFetchingData);
+      setLoadingData(false);
     }
-  }, [selectedTags, user, lang, ui.errorFetchingData]);
+  }, [selectedTags, user, lang, userError, ui.errorFetchingData]);
 
   useEffect(() => {
     fetchData();
@@ -152,7 +215,7 @@ export default function SettingsPage() {
           )
         );
         setModalVisible(false);
-      } catch (error:any) {
+      } catch (error: any) {
         alert(`Fehler beim Speichern des Werts: ${error.message}`);
       }
     }
@@ -169,13 +232,11 @@ export default function SettingsPage() {
     }
     return record.VAR_VALUE;
   };
-  
 
   const getLocalizedText = (record: DataItem, key: string): string => {
     const value = record[`${key}_${lang}` as keyof DataItem] ?? record[key as keyof DataItem];
     return value !== undefined && value !== null ? String(value) : ''; // Fallback auf einen leeren String
   };
-  
 
   const renderMenuItems = () => {
     const groupedTags = tags.reduce((acc: Record<string, string[]>, tag) => {
@@ -185,10 +246,10 @@ export default function SettingsPage() {
       }
       return acc;
     }, {});
-  
+
     // Sortiere die `top`-Level-Menüs alphabetisch
     const sortedTopLevelTags = Object.entries(groupedTags).sort(([a], [b]) => a.localeCompare(b));
-  
+
     return sortedTopLevelTags.map(([top, subs]) => (
       subs.length > 0 ? (
         <SubMenu key={top} title={top}>
@@ -206,14 +267,15 @@ export default function SettingsPage() {
       )
     ));
   };
-  
 
   return (
-    
-    <Layout style={{ height: '100vh', overflow: 'hidden', /*backgroundColor: '#1f1f1f'*/ }}>
+    <Layout style={{ height: '100vh', overflow: 'hidden' }}>
       {screens.md && (
-        <Sider width={200}  style={{ overflowY: 'auto', height: '100vh' }}>
-          <Menu mode="inline" /*theme="dark"*/ selectedKeys={selectedTags ? [`${selectedTags.top}${selectedTags.sub ? `/${selectedTags.sub}` : ''}`] : []}>
+        <Sider width={200} style={{ overflowY: 'auto', height: '100vh' }}>
+          <Menu
+            mode="inline"
+            selectedKeys={selectedTags ? [`${selectedTags.top}${selectedTags.sub ? `/${selectedTags.sub}` : ''}`] : []}
+          >
             {loadingTags ? <Spin tip={ui.loading} /> : renderMenuItems()}
           </Menu>
         </Sider>
@@ -221,9 +283,11 @@ export default function SettingsPage() {
 
       {!screens.md && (
         <>
-          <Button icon={<MenuOutlined />} onClick={() => setDrawerVisible(true)} style={{ margin: '16px' }}>{ui.menu}</Button>
+          <Button icon={<MenuOutlined />} onClick={() => setDrawerVisible(true)} style={{ margin: '16px' }}>
+            {ui.menu}
+          </Button>
           <Drawer title={ui.menu} placement="left" onClose={() => setDrawerVisible(false)} open={drawerVisible}>
-            <Menu mode="inline" /*theme="dark"*/>
+            <Menu mode="inline">
               {loadingTags ? <Spin tip={ui.loading} /> : renderMenuItems()}
             </Menu>
           </Drawer>
@@ -232,6 +296,8 @@ export default function SettingsPage() {
 
       <Layout>
         <Content style={{ padding: '0', height: '100%', display: 'flex', flexDirection: 'column' }}>
+          {userError && <Alert message={userError} type="error" showIcon style={{ margin: '16px' }} />}
+
           {selectedTags && (
             <Breadcrumb style={{ padding: '8px 16px' }}>
               <Breadcrumb.Item>{selectedTags.top}</Breadcrumb.Item>
@@ -239,74 +305,93 @@ export default function SettingsPage() {
             </Breadcrumb>
           )}
 
-          <Card style={{ /*backgroundColor: '#1f1f1f',*/ flex: 1, overflow: 'hidden' }}>
-          
+          <Card style={{ flex: 1, overflow: 'hidden' }}>
             {loadingData ? <Spin tip={ui.loading} /> : (
-              
               <Table
-              columns={[
-                {
-                  title: ui.parameter,
-                  dataIndex: 'NAME',
-                  render: (text, record) => (
-                    <span>
-                      {getLocalizedText(record, 'NAME')}
-                      {record.beschreibung  &&   (
-
-                          <InfoCircleOutlined style={{ marginLeft: '8px' }} onClick={() => { setDescription(getLocalizedText(record, 'beschreibung')); setDescriptionModalVisible(true); }} />
-                        
-                      )}
-                    </span>
-                  ),
-                  width: '40%',
-                },
-                {
-                  title: ui.value,
-                  dataIndex: 'VAR_VALUE',
-                  render: (text, record) => (
-                    
-                    <div style={{ cursor: 'pointer', /*color: '#1890ff'*/ }} onClick={() => { setSelectedRow(record); setNewValue(record.VAR_VALUE.toString()); setModalVisible(true); }}>
-                      <Button> {renderValue(record)} {/* Hier wird jetzt die Bezeichnung anstelle des Wertes angezeigt */}
-                      {record.TYPE === 'num' && record.unit && ` ${record.unit}`}</Button>
-                      
-                    </div>
-                  ),
-                  width: '60%',
-                },
-              ]}
-              dataSource={data}
-              pagination={false}
-              scroll={{ y: 'calc(100vh - 120px)' }}
-              rowKey="id"
-            />
-            
+                columns={[
+                  {
+                    title: ui.parameter,
+                    dataIndex: 'NAME',
+                    render: (text, record) => (
+                      <span>
+                        {getLocalizedText(record, 'NAME')}
+                        {record.beschreibung && (
+                          <InfoCircleOutlined
+                            style={{ marginLeft: '8px' }}
+                            onClick={() => {
+                              setDescription(getLocalizedText(record, 'beschreibung'));
+                              setDescriptionModalVisible(true);
+                            }}
+                          />
+                        )}
+                      </span>
+                    ),
+                    width: '40%',
+                  },
+                  {
+                    title: ui.value,
+                    dataIndex: 'VAR_VALUE',
+                    render: (text, record) => (
+                      <div
+                        style={{ cursor: 'pointer' }}
+                        onClick={() => {
+                          setSelectedRow(record);
+                          setNewValue(record.VAR_VALUE.toString());
+                          setModalVisible(true);
+                        }}
+                      >
+                        <Button>
+                          {renderValue(record)}
+                          {record.TYPE === 'num' && record.unit && ` ${record.unit}`}
+                        </Button>
+                      </div>
+                    ),
+                    width: '60%',
+                  },
+                ]}
+                dataSource={data}
+                pagination={false}
+                scroll={{ y: 'calc(100vh - 120px)' }}
+                rowKey="id"
+              />
             )}
           </Card>
-          
         </Content>
       </Layout>
 
       {/* Modal zum Bearbeiten */}
       {selectedRow && (
-        <Modal 
-        title={getLocalizedText(selectedRow, 'NAME')} 
-        open={modalVisible} onCancel={() => setModalVisible(false)} 
-        footer={[
-        <Button type="primary" size="large" icon={<SaveOutlined />} onClick={handleSave}></Button>,
-        <Button size="large" icon={<CloseOutlined />} onClick={() => setModalVisible(false)}></Button>]} 
-        centered width="60%" >
-
+        <Modal
+          title={getLocalizedText(selectedRow, 'NAME')}
+          open={modalVisible}
+          onCancel={() => setModalVisible(false)}
+          footer={[
+            <Button type="primary" size="large" icon={<SaveOutlined />} onClick={handleSave}></Button>,
+            <Button size="large" icon={<CloseOutlined />} onClick={() => setModalVisible(false)}></Button>,
+          ]}
+          centered
+          width="60%"
+        >
           {selectedRow.TYPE === 'drop' && (
-            <p><Dropdown trigger={['click']} overlay={
-              <Menu onClick={({ key }) => setNewValue(key)}>
-                {getLocalizedText(selectedRow, 'OPTI')?.split(',').map((opt) => {
-                  const [val, label] = opt.split(':');
-                  return <Menu.Item key={val}>{label}</Menu.Item>;
-                })}
-              </Menu>
-            }>
-              <Button>{getLocalizedText(selectedRow, 'OPTI')?.split(',').find((opt) => opt.startsWith(String(newValue)))?.split(':')[1] || ui.select} <DownOutlined /></Button>
-            </Dropdown></p>
+            <p>
+              <Dropdown
+                trigger={['click']}
+                overlay={
+                  <Menu onClick={({ key }) => setNewValue(key)}>
+                    {getLocalizedText(selectedRow, 'OPTI')?.split(',').map((opt) => {
+                      const [val, label] = opt.split(':');
+                      return <Menu.Item key={val}>{label}</Menu.Item>;
+                    })}
+                  </Menu>
+                }
+              >
+                <Button>
+                  {getLocalizedText(selectedRow, 'OPTI')?.split(',').find((opt) => opt.startsWith(String(newValue)))?.split(':')[1] ||
+                    ui.select}{' '}
+                  <DownOutlined />
+                </Button>
+              </Dropdown>
+            </p>
           )}
 
           {selectedRow.TYPE === 'num' && (
@@ -314,20 +399,26 @@ export default function SettingsPage() {
               <Input value={newValue} onChange={(e) => setNewValue(e.target.value)} suffix={selectedRow.unit} />
               <text style={{ marginLeft: '1px' }}>Min: {selectedRow.MIN}{selectedRow.unit}</text>
               <text style={{ marginLeft: '10px' }}>Max: {selectedRow.MAX}{selectedRow.unit}</text>
-              <p><VirtualKeyboard
-                onInput={(value) => setNewValue((prev) => prev + value)} // Anhängen der neuen Eingabe
-                onDelete={() => setNewValue((prev) => prev.slice(0, -1))} // Letztes Zeichen löschen
-              /></p>
+              <p>
+                <VirtualKeyboard
+                  onInput={(value) => setNewValue((prev) => prev + value)} // Anhängen der neuen Eingabe
+                  onDelete={() => setNewValue((prev) => prev.slice(0, -1))} // Letztes Zeichen löschen
+                />
+              </p>
             </>
           )}
 
           {selectedRow.TYPE === 'text' && (
             <>
-              <Input value={newValue} onChange={(e) => setNewValue(e.target.value)}  />
-              <p><SwissKeyboard onInput={setNewValue} onDelete={() => setNewValue((prev) => prev.slice(0, -1))} /></p>
+              <Input value={newValue} onChange={(e) => setNewValue(e.target.value)} />
+              <p>
+                <SwissKeyboard
+                  onInput={setNewValue}
+                  onDelete={() => setNewValue((prev) => prev.slice(0, -1))}
+                />
+              </p>
             </>
           )}
-
         </Modal>
       )}
 
@@ -336,6 +427,5 @@ export default function SettingsPage() {
         <Typography.Paragraph>{description}</Typography.Paragraph>
       </Modal>
     </Layout>
-    
   );
 }
