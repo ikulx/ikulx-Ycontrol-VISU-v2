@@ -1,11 +1,12 @@
 'use client';
 
 import 'antd/dist/reset.css'; // Ant Design reset styles
-import { ConfigProvider, Spin } from 'antd'; 
+import { ConfigProvider, Spin,theme } from 'antd'; 
 import { LoadingOutlined } from '@ant-design/icons';
 import './globals.css'; // Custom global styles
 import { useState, useEffect, ReactNode } from 'react';
 import useBreakpoint from 'antd/lib/grid/hooks/useBreakpoint';
+import { defaultAlgorithm } from '@ant-design/compatible';
 
 interface LayoutProps {
   children: ReactNode;
@@ -14,6 +15,7 @@ interface LayoutProps {
 export default function RootLayout({ children }: LayoutProps) {
   const [loading, setLoading] = useState(true);
   const screens = useBreakpoint(); // Responsive handling
+  const {  darkAlgorithm } = theme;
 
   useEffect(() => {
     const handleLoad = () => {
@@ -61,7 +63,11 @@ export default function RootLayout({ children }: LayoutProps) {
       <head>
         <title>Ycontrol</title>
       </head>
-      <body style={{overflow: "hidden"}}>
+      <ConfigProvider theme={{
+       algorithm: darkAlgorithm ,
+    }}><body>{children}</body></ConfigProvider>
+      
+      {/* <body style={{overflow: "hidden"}}>
         <ConfigProvider
           theme={{
             token: {
@@ -75,7 +81,7 @@ export default function RootLayout({ children }: LayoutProps) {
             {children}
           </div>
         </ConfigProvider>
-      </body>
+      </body> */}
     </html>
   );
 }

@@ -32,8 +32,8 @@ export async function GET(request: Request, { params }: { params: { tag_top: str
               COALESCE(${beschreibungField}, beschreibung) AS beschreibung
        FROM QHMI_VARIABLES
        WHERE tag_top = ? AND visible = 1
-       AND (benutzer IS NULL OR benutzer = '' OR benutzer LIKE '%' || ? || '%')`,
-      [decodedTagTop, user || '']
+       AND (benutzer LIKE '%' || ? || '%')`,  // Benutzer muss vorkommen
+  [decodedTagTop,  user || '']
     );
 
     return NextResponse.json(data);

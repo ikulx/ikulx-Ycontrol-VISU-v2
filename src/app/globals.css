@@ -1,59 +1,3 @@
-/* Globale Stile */
-a {
-    color: #1890ff;
-    text-decoration: none;
-  }
-  
-  a:hover {
-    text-decoration: underline;
-  }
-  
-  h1, h2, h3 {
-    color: white;
-  }
-  
-  /* Globale Scrollbar-Stile */
-::-webkit-scrollbar {
-  width: 8px;
-}
-
-::-webkit-scrollbar-track {
-  background: #1f1f1f; /* Hintergrund der Scrollbar */
-}
-
-::-webkit-scrollbar-thumb {
-  background-color: #434343; /* Farbe des Scrollbalkens */
-  border-radius: 10px;
-  border: 2px solid #1f1f1f; /* Optionaler Rand, um den Scrollbalken optisch abzuheben */
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: #555555; /* Hover-Effekt */
-}
-
-/* Scrollbar im Menü */
-.ant-menu {
-  scrollbar-width: thin; /* Firefox-Unterstützung */
-  scrollbar-color: #434343 #1f1f1f; /* Farbe für Firefox */
-}
-
-.ant-menu::-webkit-scrollbar {
-  width: 8px;
-}
-
-.ant-menu::-webkit-scrollbar-track {
-  background: #1f1f1f;
-}
-
-.ant-menu::-webkit-scrollbar-thumb {
-  background-color: #434343;
-  border-radius: 10px;
-  border: 2px solid #1f1f1f;
-}
-
-.ant-menu::-webkit-scrollbar-thumb:hover {
-  background: #555555;
-}
 
 /* Scrollbar im Table */
 .ant-table-body {
@@ -76,5 +20,29 @@ a {
 }
 
 .ant-table-body::-webkit-scrollbar-thumb:hover {
+  background: #555555;
+}
+
+/* Scrollbar im Menü */
+.ant-layout-sider {
+  scrollbar-width: thin; /* Firefox-Unterstützung */
+  scrollbar-color: #434343 #1f1f1f; /* Farbe für Firefox */
+}
+
+.ant-layout-sider::-webkit-scrollbar {
+  width: 8px;
+}
+
+.ant-layout-sider::-webkit-scrollbar-track {
+  background: #1f1f1f;
+}
+
+.ant-layout-sider::-webkit-scrollbar-thumb {
+  background-color: #434343;
+  border-radius: 10px;
+  border: 2px solid #1f1f1f;
+}
+
+.ant-layout-sider::-webkit-scrollbar-thumb:hover {
   background: #555555;
 }

@@ -1,35 +1,18 @@
-// app/settings/page.tsx
-
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
-  Menu,
-  Layout,
-  Table,
-  Input,
-  Dropdown,
-  Button,
-  Typography,
-  Card,
-  Modal,
-  Drawer,
-  Breadcrumb,
-  Tooltip,
-  Spin,
-  Alert,
+  ConfigProvider, Menu, Layout, Table, Input, Dropdown, Button, Typography, Card, Modal, Drawer, Breadcrumb, Tooltip, Spin, Alert, theme
 } from 'antd';
 import { useSearchParams } from 'next/navigation';
-import {
-  MenuOutlined,
-  CloseOutlined,
-  SaveOutlined,
-  DownOutlined,
-  InfoCircleOutlined,
-} from '@ant-design/icons';
+import { MenuOutlined, CloseOutlined, SaveOutlined, DownOutlined, InfoCircleOutlined } from '@ant-design/icons';
 import { VirtualKeyboard } from './VirtualKeyboard';
 import { SwissKeyboard } from './SwissKeyboard';
 import useBreakpoint from 'antd/lib/grid/hooks/useBreakpoint';
+import { unit } from '@ant-design/cssinjs';
+
+// Base Path aus Umgebungsvariable
+const basePath = process.env.NEXT_PUBLIC_BASE_PATH || '';
 
 const { Content, Sider } = Layout;
 const { SubMenu } = Menu;
@@ -37,27 +20,18 @@ const { SubMenu } = Menu;
 interface DataItem {
   id: number;
   NAME: string;
-  NAME_fr?: string;
-  NAME_en?: string;
-  NAME_it?: string;
   VAR_VALUE: string | number;
   TYPE: 'num' | 'text' | 'bool' | 'drop';
   OPTI?: string;
-  OPTI_fr?: string;
-  OPTI_en?: string;
-  OPTI_it?: string;
   MIN?: number;
   MAX?: number;
-  unit?: string | null; // unit kann jetzt auch null sein
+  unit?: string | null;
   beschreibung?: string;
-  beschreibung_fr?: string;
-  beschreibung_en?: string;
-  beschreibung_it?: string;
 }
 
 interface Tag {
   tag_top: string | null;
-  tag_sub: string | null | ''; // tag_sub kann null, leer oder ein String sein
+  tag_sub: string | null | '';
 }
 
 // UI-Text Übersetzungen
@@ -73,6 +47,7 @@ const uiText = {
     loading: 'Lädt...',
     errorFetchingTags: 'Es konnten keine Parameter abgerufen werden.',
     errorFetchingData: 'Es konnten keine Daten abgerufen werden.',
+    errorNoUser: 'Kein Benutzer angegeben.',
   },
   fr: {
     menu: 'Menu',
@@ -85,6 +60,7 @@ const uiText = {
     loading: 'Chargement...',
     errorFetchingTags: 'Impossible de récupérer les paramètres.',
     errorFetchingData: 'Impossible de récupérer les données.',
+    errorNoUser: 'Kein Benutzer angegeben.',
   },
   en: {
     menu: 'Menu',
@@ -97,6 +73,7 @@ const uiText = {
     loading: 'Loading...',
     errorFetchingTags: 'Unable to fetch parameters.',
     errorFetchingData: 'Unable to fetch data.',
+    errorNoUser: 'Kein Benutzer angegeben.',
   },
   it: {
     menu: 'Menu',
@@ -109,319 +86,209 @@ const uiText = {
     loading: 'Caricamento...',
     errorFetchingTags: 'Impossibile recuperare i parametri.',
     errorFetchingData: 'Impossibile recuperare i dati.',
+    errorNoUser: 'Kein Benutzer angegeben.',
   },
+
 };
 
 export default function SettingsPage() {
   const [tags, setTags] = useState<Tag[]>([]);
   const [selectedTags, setSelectedTags] = useState<{ top: string; sub?: string } | null>(null);
-  const [openKeys, setOpenKeys] = useState<string[]>([]);
   const [data, setData] = useState<DataItem[]>([]);
   const [selectedRow, setSelectedRow] = useState<DataItem | null>(null);
   const [newValue, setNewValue] = useState<string>('');
-  const [isModalVisible, setIsModalVisible] = useState(false);
+  const [modalVisible, setModalVisible] = useState(false);
   const [drawerVisible, setDrawerVisible] = useState(false);
-  const [isDescriptionModalVisible, setIsDescriptionModalVisible] = useState(false);
+  const [descriptionModalVisible, setDescriptionModalVisible] = useState(false);
   const [description, setDescription] = useState<string>('');
   const [loadingTags, setLoadingTags] = useState<boolean>(false);
   const [loadingData, setLoadingData] = useState<boolean>(false);
   const [errorTags, setErrorTags] = useState<string | null>(null);
   const [errorData, setErrorData] = useState<string | null>(null);
+  const [userError, setUserError] = useState<string | null>(null); // Fehler für fehlenden Benutzer
+
   const screens = useBreakpoint();
   const searchParams = useSearchParams();
   const user = searchParams.get('user');
   const initialTop = searchParams.get('top');
   const initialSub = searchParams.get('sub');
-  const lang = searchParams.get('lang') || 'de'; // Spracheinstellung aus URL, Standard ist 'de'
+  const lang = searchParams.get('lang') || 'de';
   const ui = uiText[lang as keyof typeof uiText];
 
-  // Effekt zum Abrufen der Tags
+  const { darkAlgorithm } = theme;
+
+  // Prüfen, ob Benutzer vorhanden ist
   useEffect(() => {
-    const fetchTags = async () => {
-      let endpoint = '/api/settings/tags';
-      const params = new URLSearchParams();
+    if (!user) {
+      setUserError(ui.errorNoUser);
+    }
+  }, [user, ui]);
 
-      if (user) {
-        params.append('user', user);
-      } else {
-        params.append('noUser', 'true');
-      }
+  // Tags abrufen (nur wenn Benutzer vorhanden)
+  const fetchTags = async () => {
+    if (!user) return; // Verhindere API-Aufrufe, wenn kein Benutzer vorhanden ist
 
-      endpoint = `${endpoint}?${params.toString()}`;
+    try {
+      const params = new URLSearchParams(user ? { user } : { noUser: 'true' });
+      const response = await fetch(`${basePath}/api/settings/tags?${params.toString()}`);
+      if (!response.ok) throw new Error('Fehler beim Abrufen der Tags');
+      const tags = await response.json();
+      setTags(tags.filter((tag: Tag) => tag.tag_top !== null));
+      setLoadingTags(false);
+    } catch (error) {
+      setErrorTags(ui.errorFetchingTags);
+      setLoadingTags(false);
+    }
+  };
+
+  useEffect(() => {
+    if (!userError) {
       setLoadingTags(true);
-      setErrorTags(null);
+      fetchTags();
+    }
+  }, [userError, user, ui]);
 
-      try {
-        const response = await fetch(endpoint);
-        if (!response.ok) {
-          throw new Error('Fehler beim Abrufen der Tags');
-        }
-        const tags: Tag[] = await response.json();
-        const filteredTags = tags.filter((tag) => tag.tag_top !== null);
-        setTags(filteredTags);
-      } catch (error) {
-        console.error('Fehler beim Abrufen der Tags:', error);
-        setErrorTags(ui.errorFetchingTags);
-      } finally {
-        setLoadingTags(false);
-      }
-    };
-
-    fetchTags();
-  }, [user, ui.errorFetchingTags]);
-
-  // Effekt zum Setzen der initial ausgewählten Tags
   useEffect(() => {
-    if (initialTop) {
+    if (initialTop && !userError) {
       setSelectedTags({ top: initialTop, sub: initialSub || undefined });
-      setOpenKeys([initialTop]);
     }
-  }, [initialTop, initialSub]);
+  }, [initialTop, initialSub, userError]);
 
-  // Effekt zum Abrufen der Daten basierend auf den ausgewählten Tags
+  // SSE zur Datenaktualisierung (nur wenn Benutzer vorhanden)
   useEffect(() => {
-    const fetchData = async () => {
-      if (selectedTags) {
-        const encodedTop = encodeURIComponent(selectedTags.top);
-        const subPath =
-          selectedTags.sub && selectedTags.sub.trim() !== ''
-            ? `/${encodeURIComponent(selectedTags.sub)}`
-            : '';
-        let endpoint = `/api/settings/data/${encodedTop}${subPath}`;
-        const params = new URLSearchParams();
-
-        if (user) {
-          params.append('user', user);
-        } else {
-          params.append('noUser', 'true');
+    if (!userError) {
+      const eventSource = new EventSource(`${basePath}/api/sse`);
+      eventSource.onmessage = (event) => {
+        const newData = JSON.parse(event.data);
+        if (Array.isArray(newData)) {
+          setData((prevData) =>
+            prevData.map((item) => {
+              const updatedItem = newData.find((d: { id: number }) => d.id === item.id);
+              return updatedItem ? { ...item, VAR_VALUE: updatedItem.VAR_VALUE } : item;
+            })
+          );
         }
-        params.append('lang', lang);
+      };
 
-        endpoint = `${endpoint}?${params.toString()}`;
-        setLoadingData(true);
-        setErrorData(null);
+      eventSource.onerror = () => eventSource.close();
+      return () => eventSource.close();
+    }
+  }, [userError]);
 
-        try {
-          const response = await fetch(endpoint);
-          if (!response.ok) {
-            throw new Error('Fehler beim Abrufen der Daten');
-          }
-          const data: DataItem[] = await response.json();
-          setData(data);
-        } catch (error) {
-          console.error('Fehler beim Abrufen der Daten:', error);
-          setErrorData(ui.errorFetchingData);
-        } finally {
-          setLoadingData(false);
-        }
-      }
-    };
+  const fetchData = useCallback(async () => {
+    if (!selectedTags || userError) return;
 
+    try {
+      const endpoint = `${basePath}/api/settings/data/${encodeURIComponent(selectedTags.top)}${
+        selectedTags.sub ? `/${encodeURIComponent(selectedTags.sub)}` : ''
+      }`;
+      const params = new URLSearchParams(user ? { user, lang } : { noUser: 'true', lang });
+      setLoadingData(true);
+      const response = await fetch(`${endpoint}?${params}`);
+      if (!response.ok) throw new Error('Fehler beim Abrufen der Daten');
+      const data = await response.json();
+      setData(data);
+      setLoadingData(false);
+    } catch (error) {
+      setErrorData(ui.errorFetchingData);
+      setLoadingData(false);
+    }
+  }, [selectedTags, user, lang, userError, ui.errorFetchingData]);
+
+  useEffect(() => {
     fetchData();
-  }, [selectedTags, user, lang, ui.errorFetchingData]);
-
-  const handleMenuClick = ({ key }: { key: string }) => {
-    const [top, sub] = key.split('/');
-    setSelectedTags(sub ? { top, sub } : { top });
-    setOpenKeys([top]);
-    if (!screens.md) {
-      setDrawerVisible(false);
-    }
-  };
-
-  const handleOpenChange = (keys: string[]) => {
-    const latestOpenKey = keys.find((key) => !openKeys.includes(key));
-    if (latestOpenKey) {
-      setOpenKeys([latestOpenKey]);
-    } else {
-      setOpenKeys([]);
-    }
-  };
-
-  const handleRowClick = (record: DataItem) => {
-    setSelectedRow(record);
-    setNewValue(record.VAR_VALUE.toString());
-    setIsModalVisible(true);
-  };
+  }, [fetchData]);
 
   const handleSave = async () => {
     if (selectedRow) {
       try {
-        const response = await fetch('/api/editor/update', {
+        const response = await fetch(`${basePath}/api/editor/update`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ id: selectedRow.id, VAR_VALUE: newValue }),
         });
         const result = await response.json();
-
-        if (result.error) {
-          alert('Fehler beim Speichern: ' + result.error);
-        } else {
-          setData((prevData) =>
-            prevData.map((item) =>
-              item.id === selectedRow.id ? { ...item, VAR_VALUE: newValue } : item
-            )
-          );
-          setIsModalVisible(false);
-        }
-      } catch (error) {
-        console.error('Fehler beim Speichern:', error);
-        alert('Fehler beim Speichern des Werts.');
+        if (result.error) throw new Error(result.error);
+        setData((prevData) =>
+          prevData.map((item) =>
+            item.id === selectedRow.id ? { ...item, VAR_VALUE: newValue } : item
+          )
+        );
+        setModalVisible(false);
+      } catch (error: any) {
+        alert(`Fehler beim Speichern des Werts: ${error.message}`);
       }
     }
-  };
-
-  const handleKeyboardInput = (input: string) => {
-    if (selectedRow?.TYPE === 'num') {
-      // Für num-Typ: Erlaubte Eingaben sind Zahlen, Punkt und Minus
-      if (input === '.' && newValue.includes('.')) return;
-      if (input === '-' && newValue.includes('-')) return;
-      if (input === '-' && newValue !== '0') return;
-      setNewValue((prevValue) =>
-        prevValue === '0' && input !== '.' && input !== '-' ? input : prevValue + input
-      );
-    } else if (selectedRow?.TYPE === 'text') {
-      // Für text-Typ: Erlaubte Eingaben sind Buchstaben und spezielle Zeichen
-      setNewValue((prevValue) => prevValue + input);
-    }
-  };
-
-  const handleDeleteInput = () => {
-    setNewValue((prevValue) => (prevValue.length > 1 ? prevValue.slice(0, -1) : ''));
-  };
-
-  const handleDescriptionClick = (beschreibung: string) => {
-    setDescription(beschreibung);
-    setIsDescriptionModalVisible(true);
-  };
-
-  const getLocalizedText = (record: DataItem, key: string) => {
-    const localizedKey = `${key}_${lang}` as keyof DataItem;
-    return (record[localizedKey] ?? record[key as keyof DataItem]) as string;
   };
 
   const renderValue = (record: DataItem) => {
     if (record.TYPE === 'drop') {
       const opti = getLocalizedText(record, 'OPTI');
       if (typeof opti === 'string') {
+        // Suche nach der Bezeichnung, die zu VAR_VALUE passt
         const selectedOption = opti.split(',').find((opt) => opt.startsWith(String(record.VAR_VALUE)));
-        return selectedOption?.split(':')[1] || record.VAR_VALUE;
+        return selectedOption ? selectedOption.split(':')[1] : record.VAR_VALUE; // Zeige die Bezeichnung, nicht den Wert
       }
     }
     return record.VAR_VALUE;
   };
 
+  const getLocalizedText = (record: DataItem, key: string): string => {
+    const value = record[`${key}_${lang}` as keyof DataItem] ?? record[key as keyof DataItem];
+    return value !== undefined && value !== null ? String(value) : ''; // Fallback auf einen leeren String
+  };
+
   const renderMenuItems = () => {
     const groupedTags = tags.reduce((acc: Record<string, string[]>, tag) => {
       if (tag.tag_top) {
-        if (!acc[tag.tag_top]) {
-          acc[tag.tag_top] = [];
-        }
-        if (tag.tag_sub) {
-          acc[tag.tag_top].push(tag.tag_sub);
-        }
+        if (!acc[tag.tag_top]) acc[tag.tag_top] = [];
+        if (tag.tag_sub) acc[tag.tag_top].push(tag.tag_sub);
       }
       return acc;
     }, {});
 
-    return Object.entries(groupedTags).map(([top, subs]) => {
-      if (subs.length > 0) {
-        return (
-          <SubMenu key={top} title={top}>
-            {subs.map((sub) => (
-              <Menu.Item key={`${top}/${sub}`}>
-                {sub}
-              </Menu.Item>
-            ))}
-          </SubMenu>
-        );
-      } else {
-        return <Menu.Item key={top}>{top}</Menu.Item>;
-      }
-    });
-  };
+    // Sortiere die `top`-Level-Menüs alphabetisch
+    const sortedTopLevelTags = Object.entries(groupedTags).sort(([a], [b]) => a.localeCompare(b));
 
-  const handleDropdownSelect = (value: string) => {
-    setNewValue(value);
-  };
-
-  // Dynamische Modal-Breite basierend auf Bildschirmgröße
-  const getModalWidth = () => {
-    if (screens.xxl) return '60%';
-    if (screens.xl) return '60%';
-    if (screens.lg) return '70%';
-    if (screens.md) return '80%';
-    if (screens.sm) return '90%';
-    return '95%';
-  };
-
-  // Styles für das Modal anpassen, um genügend Platz für die Tastatur zu schaffen und Dark Mode
-  const modalStyle: React.CSSProperties = {
-    maxHeight: '80vh', // Erhöhte maximale Höhe
-    overflowY: 'auto', // Scrollen ermöglichen
-    backgroundColor: '#1f1f1f', // Dunkler Hintergrund für das Modal
-    color: 'white', // Helle Schriftfarbe
-    padding: '20px',
-  };
-
-  // Styles für Input-Felder im Modal
-  const inputStyle: React.CSSProperties = {
-    width: '100%', // Volle Breite, angepasst für flexibles Layout
-    backgroundColor: '#434343',
-    color: 'white',
-    border: '1px solid #555555',
+    return sortedTopLevelTags.map(([top, subs]) => (
+      subs.length > 0 ? (
+        <SubMenu key={top} title={top}>
+          {/* Sortiere die `sub`-Menüs alphabetisch */}
+          {subs.sort((a, b) => a.localeCompare(b)).map((sub) => (
+            <Menu.Item key={`${top}/${sub}`} onClick={() => setSelectedTags({ top, sub })}>
+              {sub}
+            </Menu.Item>
+          ))}
+        </SubMenu>
+      ) : (
+        <Menu.Item key={top} onClick={() => setSelectedTags({ top })}>
+          {top}
+        </Menu.Item>
+      )
+    ));
   };
 
   return (
-    <Layout style={{ height: '100vh', overflow: 'hidden', backgroundColor: '#1f1f1f' }}>
+    <Layout style={{ height: '100vh', overflow: 'hidden' }}>
       {screens.md && (
-        <Sider width={250} style={{ background: '#1f1f1f', overflowY: 'auto',  height: '97vh', }}>
+        <Sider width={200} style={{ overflowY: 'auto', height: '100vh' }}>
           <Menu
             mode="inline"
-            theme="dark"
-            onClick={handleMenuClick}
-            openKeys={openKeys}
-            onOpenChange={handleOpenChange}
-            selectedKeys={
-              selectedTags
-                ? [`${selectedTags.top}${selectedTags.sub ? `/${selectedTags.sub}` : ''}`]
-                : []
-            }
+            selectedKeys={selectedTags ? [`${selectedTags.top}${selectedTags.sub ? `/${selectedTags.sub}` : ''}`] : []}
           >
-            {renderMenuItems()}
+            {loadingTags ? <Spin tip={ui.loading} /> : renderMenuItems()}
           </Menu>
         </Sider>
       )}
 
       {!screens.md && (
         <>
-          <Button
-            icon={<MenuOutlined />}
-            onClick={() => setDrawerVisible(true)}
-            style={{ margin: '16px' }}
-          >
+          <Button icon={<MenuOutlined />} onClick={() => setDrawerVisible(true)} style={{ margin: '16px' }}>
             {ui.menu}
           </Button>
-          <Drawer
-            title={ui.menu}
-            placement="left"
-            onClose={() => setDrawerVisible(false)}
-            open={drawerVisible}
-            bodyStyle={{ padding: 0, backgroundColor: '#1f1f1f', color: 'white' }}
-          >
-            <Menu
-              mode="inline"
-              theme="dark"
-              onClick={handleMenuClick}
-              openKeys={openKeys}
-              onOpenChange={handleOpenChange}
-              selectedKeys={
-                selectedTags
-                  ? [`${selectedTags.top}${selectedTags.sub ? `/${selectedTags.sub}` : ''}`]
-                  : []
-              }
-            >
-              {renderMenuItems()}
+          <Drawer title={ui.menu} placement="left" onClose={() => setDrawerVisible(false)} open={drawerVisible}>
+            <Menu mode="inline">
+              {loadingTags ? <Spin tip={ui.loading} /> : renderMenuItems()}
             </Menu>
           </Drawer>
         </>
@@ -429,223 +296,136 @@ export default function SettingsPage() {
 
       <Layout>
         <Content style={{ padding: '0', height: '100%', display: 'flex', flexDirection: 'column' }}>
+          {userError && <Alert message={userError} type="error" showIcon style={{ margin: '16px' }} />}
+
           {selectedTags && (
             <Breadcrumb style={{ padding: '8px 16px' }}>
-              <Breadcrumb.Item>
-                <Typography.Text style={{ color: 'white' }}>{selectedTags.top}</Typography.Text>
-              </Breadcrumb.Item>
-              {selectedTags.sub && (
-                <Breadcrumb.Item>
-                  <Typography.Text style={{ color: 'white' }}>{selectedTags.sub}</Typography.Text>
-                </Breadcrumb.Item>
-              )}
+              <Breadcrumb.Item>{selectedTags.top}</Breadcrumb.Item>
+              {selectedTags.sub && <Breadcrumb.Item>{selectedTags.sub}</Breadcrumb.Item>}
             </Breadcrumb>
           )}
 
-          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-            <Card
-              style={{
-                backgroundColor: '#1f1f1f',
-                color: 'white',
-                width: '100%',
-                overflow: 'hidden',
-                display: 'flex',
-                flexDirection: 'column',
-                flex: 1,
-                marginBottom: '0',
-              }}
-              bodyStyle={{
-                flex: '1',
-                overflow: 'hidden',
-                padding: '0',
-                display: 'flex',
-                flexDirection: 'column',
-              }}
-            >
-              {loadingData ? (
-                <div
-                  style={{
-                    display: 'flex',
-                    justifyContent: 'center',
-                    alignItems: 'center',
-                    flex: 1,
-                  }}
-                >
-                  <Spin tip={ui.loading} />
-                </div>
-              ) : errorData ? (
-                <Alert message={errorData} type="error" showIcon style={{ margin: '16px' }} />
-              ) : (
-                <Table
-                  columns={[
-                    {
-                      title: ui.parameter,
-                      dataIndex: 'NAME',
-                      key: 'name',
-                      ellipsis: true,
-                      width: '40%',
-                      render: (text: any, record: DataItem) => (
-                        <span>
-                          {getLocalizedText(record, 'NAME')}
-                          {record.beschreibung && (
-                            <Tooltip title={ui.description}>
-                              <InfoCircleOutlined
-                                onClick={() =>
-                                  handleDescriptionClick(getLocalizedText(record, 'beschreibung'))
-                                }
-                                style={{ marginLeft: 8, cursor: 'pointer' }}
-                              />
-                            </Tooltip>
-                          )}
-                        </span>
-                      ),
-                    },
-                    {
-                      title: ui.value,
-                      dataIndex: 'VAR_VALUE',
-                      key: 'var_value',
-                      render: (text: any, record: DataItem) => (
-                        <div
-                          onClick={() => handleRowClick(record)}
-                          style={{ cursor: 'pointer', color: '#1890ff' }}
-                        >
+          <Card style={{ flex: 1, overflow: 'hidden' }}>
+            {loadingData ? <Spin tip={ui.loading} /> : (
+              <Table
+                columns={[
+                  {
+                    title: ui.parameter,
+                    dataIndex: 'NAME',
+                    render: (text, record) => (
+                      <span>
+                        {getLocalizedText(record, 'NAME')}
+                        {record.beschreibung && (
+                          <InfoCircleOutlined
+                            style={{ marginLeft: '8px' }}
+                            onClick={() => {
+                              setDescription(getLocalizedText(record, 'beschreibung'));
+                              setDescriptionModalVisible(true);
+                            }}
+                          />
+                        )}
+                      </span>
+                    ),
+                    width: '40%',
+                  },
+                  {
+                    title: ui.value,
+                    dataIndex: 'VAR_VALUE',
+                    render: (text, record) => (
+                      <div
+                        style={{ cursor: 'pointer' }}
+                        onClick={() => {
+                          setSelectedRow(record);
+                          setNewValue(record.VAR_VALUE.toString());
+                          setModalVisible(true);
+                        }}
+                      >
+                        <Button>
                           {renderValue(record)}
-                          {record.TYPE === 'num' && record.unit ? ` ${record.unit}` : ''}
-                        </div>
-                      ),
-                      ellipsis: true,
-                      width: '60%',
-                    },
-                  ]}
-                  dataSource={data}
-                  pagination={false}
-                  scroll={{ x: 'max-content', y: 'calc(100vh - 120px)' }}
-                  rowKey="id"
-                  style={{ flex: 1 }}
-                />
-              )}
-            </Card>
-          </div>
-
-          {/* Anzeigen von Lade- und Fehlerzuständen für Tags */}
-          {loadingTags && (
-            <div
-              style={{
-                position: 'absolute',
-                top: '50%',
-                left: '50%',
-                transform: 'translate(-50%, -50%)',
-              }}
-            >
-              <Spin tip={ui.loading} />
-            </div>
-          )}
-          {errorTags && <Alert message={errorTags} type="error" showIcon style={{ margin: '16px' }} />}
+                          {record.TYPE === 'num' && record.unit && ` ${record.unit}`}
+                        </Button>
+                      </div>
+                    ),
+                    width: '60%',
+                  },
+                ]}
+                dataSource={data}
+                pagination={false}
+                scroll={{ y: 'calc(100vh - 120px)' }}
+                rowKey="id"
+              />
+            )}
+          </Card>
         </Content>
       </Layout>
 
-      {/* Modal zum Bearbeiten von Parametern */}
+      {/* Modal zum Bearbeiten */}
       {selectedRow && (
         <Modal
           title={getLocalizedText(selectedRow, 'NAME')}
-          open={isModalVisible}
-          onCancel={() => setIsModalVisible(false)}
-          footer={null}
+          open={modalVisible}
+          onCancel={() => setModalVisible(false)}
+          footer={[
+            <Button type="primary" size="large" icon={<SaveOutlined />} onClick={handleSave}></Button>,
+            <Button size="large" icon={<CloseOutlined />} onClick={() => setModalVisible(false)}></Button>,
+          ]}
           centered
-          width={getModalWidth()} // Dynamische Breite basierend auf Bildschirmgröße
-          bodyStyle={modalStyle} // Maximale Höhe und Scrollen ermöglichen
+          width="60%"
         >
           {selectedRow.TYPE === 'drop' && (
-            <>
-              <Dropdown trigger={['click']}
+            <p>
+              <Dropdown
+                trigger={['click']}
                 overlay={
-                  <Menu onClick={({ key }) => handleDropdownSelect(key)}>
+                  <Menu onClick={({ key }) => setNewValue(key)}>
                     {getLocalizedText(selectedRow, 'OPTI')?.split(',').map((opt) => {
                       const [val, label] = opt.split(':');
-                      return (
-                        <Menu.Item key={val}>
-                          {label}
-                        </Menu.Item>
-                      );
+                      return <Menu.Item key={val}>{label}</Menu.Item>;
                     })}
                   </Menu>
                 }
               >
-                <Button
-                  style={{
-                    width: '100%',
-                    marginBottom: '16px',
-                    backgroundColor: '#434343',
-                    color: 'white',
-                    border: '1px solid #555555',
-                  }}
-                >
+                <Button>
                   {getLocalizedText(selectedRow, 'OPTI')?.split(',').find((opt) => opt.startsWith(String(newValue)))?.split(':')[1] ||
                     ui.select}{' '}
                   <DownOutlined />
                 </Button>
               </Dropdown>
-            </>
+            </p>
           )}
+
           {selectedRow.TYPE === 'num' && (
             <>
-              <Typography.Title level={4}>{getLocalizedText(selectedRow, 'NAME')}</Typography.Title>
-              <p style={{ marginBottom: '16px' }}>
-                Min: {selectedRow.MIN}, Max: {selectedRow.MAX}
-              </p>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
-                <Input
-                  value={newValue}
-                  onChange={(e) => setNewValue(e.target.value)}
-                  style={inputStyle}
+              <Input value={newValue} onChange={(e) => setNewValue(e.target.value)} suffix={selectedRow.unit} />
+              <text style={{ marginLeft: '1px' }}>Min: {selectedRow.MIN}{selectedRow.unit}</text>
+              <text style={{ marginLeft: '10px' }}>Max: {selectedRow.MAX}{selectedRow.unit}</text>
+              <p>
+                <VirtualKeyboard
+                  onInput={(value) => setNewValue((prev) => prev + value)} // Anhängen der neuen Eingabe
+                  onDelete={() => setNewValue((prev) => prev.slice(0, -1))} // Letztes Zeichen löschen
                 />
-                <span style={{ color: 'white', fontSize: '16px' }}>
-                  {selectedRow.unit || ''}
-                </span>
-              </div>
-              <VirtualKeyboard onInput={handleKeyboardInput} onDelete={handleDeleteInput} />
+              </p>
             </>
           )}
+
           {selectedRow.TYPE === 'text' && (
             <>
-              <Typography.Title level={4}>{getLocalizedText(selectedRow, 'NAME')}</Typography.Title>
-              <Input
-                value={newValue}
-                onChange={(e) => setNewValue(e.target.value)}
-                style={{ ...inputStyle, marginBottom: '16px' }}
-              />
-              <SwissKeyboard onInput={handleKeyboardInput} onDelete={handleDeleteInput} />
+              <Input value={newValue} onChange={(e) => setNewValue(e.target.value)} />
+              <p>
+                <SwissKeyboard
+                  onInput={setNewValue}
+                  onDelete={() => setNewValue((prev) => prev.slice(0, -1))}
+                />
+              </p>
             </>
           )}
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '20px' }}>
-            <Button
-              icon={<CloseOutlined />}
-              onClick={() => setIsModalVisible(false)}
-              style={{ marginRight: '10px' }}
-            >
-              {ui.cancel}
-            </Button>
-            <Button type="primary" icon={<SaveOutlined />} onClick={handleSave}>
-              {ui.save}
-            </Button>
-          </div>
         </Modal>
       )}
 
       {/* Modal für Beschreibungen */}
-      {isDescriptionModalVisible && (
-        <Modal
-          title={ui.description}
-          open={isDescriptionModalVisible}
-          onCancel={() => setIsDescriptionModalVisible(false)}
-          footer={null}
-          centered
-          style={{ backgroundColor: '#1f1f1f', color: 'white' }} // Dunkler Hintergrund für das Modal
-          bodyStyle={{ color: 'white', padding: '20px' }}
-        >
-          <Typography.Paragraph>{description}</Typography.Paragraph>
-        </Modal>
-      )}
+      <Modal title={ui.description} open={descriptionModalVisible} onCancel={() => setDescriptionModalVisible(false)} footer={null}>
+        <Typography.Paragraph>{description}</Typography.Paragraph>
+      </Modal>
     </Layout>
   );
 }
