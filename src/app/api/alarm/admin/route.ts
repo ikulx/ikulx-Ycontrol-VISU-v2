@@ -3,6 +3,7 @@
 import { NextResponse } from 'next/server';
 import pool from '@/lib/mariadb';
 
+
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const action = searchParams.get('action');

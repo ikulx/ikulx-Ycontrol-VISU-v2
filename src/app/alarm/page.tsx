@@ -79,52 +79,25 @@ export default function HomePage() {
 
     eventSource.onmessage = (event) => {
       try {
-        const data: Entry[] = JSON.parse(event.data);
+        const data: EventLogEntry = JSON.parse(event.data);
         console.log('Received SSE data:', data); // Debugging
 
-        setEntries((prevEntries) => {
-          let updatedEntries = [...prevEntries];
-
-          data.forEach((newEntry) => {
-            // Nur nach rule_id suchen
-            const existingIndex = updatedEntries.findIndex(
-              (e) => e.rule_id === newEntry.rule_id
-            );
-
-            if (existingIndex !== -1) {
-              // Aktualisiere bestehenden Eintrag
-              updatedEntries[existingIndex] = newEntry;
-              console.log(`Updated entry with rule_id ${newEntry.rule_id}`);
-            } else {
-              // Füge neuen Eintrag hinzu
-              updatedEntries.push(newEntry);
-              console.log(`Added new entry with rule_id ${newEntry.rule_id}`);
-            }
-          });
-
-          // Entferne inaktive 'warn' und 'info' Einträge
-          updatedEntries = updatedEntries.filter((entry) => {
-            const shouldRemove = entry.status === 'inactive' && ['warn', 'info'].includes(entry.priority);
-            if (shouldRemove) {
-              console.log('Removing entry:', entry); // Debugging
-            }
-            return !shouldRemove;
-          });
-
-          console.log(`Entries after filter: ${updatedEntries.length}`);
-
-          // Sortiere die Einträge nach timestamp absteigend
-          updatedEntries.sort(
-            (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
-          );
-
-          console.log('Final updated entries:', updatedEntries); // Debugging
-
-          return updatedEntries;
+        // Aktualisieren Sie das eventLog basierend auf den neuen Daten
+        setEventLog((prevEventLog) => {
+          const existingIndex = prevEventLog.findIndex((entry) => entry.id === data.id);
+          if (existingIndex !== -1) {
+            // Aktualisiere bestehenden Eintrag
+            const updatedEventLog = [...prevEventLog];
+            updatedEventLog[existingIndex] = data;
+            return updatedEventLog;
+          } else {
+            // Füge neuen Eintrag hinzu
+            return [data, ...prevEventLog];
+          }
         });
 
-        // Trigger event log refresh
-        fetchEventLog(eventLogPage);
+        // Optional: Trigger event log refresh
+        // fetchEventLog(eventLogPage);
       } catch (err: any) {
         console.error('Fehler beim Verarbeiten der SSE-Daten:', err);
         setError('Fehler beim Verarbeiten der SSE-Daten.');
@@ -144,7 +117,7 @@ export default function HomePage() {
 
   const handleReset = async () => {
     try {
-      const res = await fetch(`${basePath}/api/alarm/reset`, {
+      const res = await fetch(`${basePath}/api/reset`, {
         method: 'POST',
       });
 
