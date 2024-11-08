@@ -1,41 +1,31 @@
-// /app/api/rules/route.ts
 import { NextResponse } from 'next/server';
-import { openDB } from '@/lib/db';
+import pool from '@/lib/mariadb';
 
-// GET-Methode: Regeln abrufen
 export async function GET() {
-  const db = await openDB();
-  
+  let connection;
   try {
-    // Alle Regeln aus der Datenbank abrufen
-    const rules = await db.all('SELECT * FROM rules');
+    connection = await pool.getConnection();
+    const [rules] = await connection.query('SELECT * FROM rules');
     return NextResponse.json(rules);
   } catch (error) {
+    console.error('Fehler beim Abrufen der Regeln:', error);
     return NextResponse.json({ error: 'Fehler beim Abrufen der Regeln' }, { status: 500 });
+  } finally {
+    if (connection) connection.release();
   }
 }
 
-// POST-Methode: Neue Regel erstellen
 export async function POST(request: Request) {
-  const db = await openDB();
-  const body = await request.json();
-  
-  const { trigger_parameter, condition_value, operator, rule_type, affected_value, action } = body;
-  
-  // Überprüfen, ob alle erforderlichen Felder vorhanden sind
-  if (!trigger_parameter || !condition_value || !operator || !rule_type || !affected_value || !action) {
-    return NextResponse.json({ error: 'Fehlende erforderliche Felder' }, { status: 400 });
-  }
-
-  const query = `
-    INSERT INTO rules (trigger_parameter, condition_value, operator, rule_type, affected_value, action)
-    VALUES (?, ?, ?, ?, ?, ?)
-  `;
-
+  const { address, value, text } = await request.json();
+  let connection;
   try {
-    await db.run(query, [trigger_parameter, condition_value, operator, rule_type, affected_value, action]);
-    return NextResponse.json({ success: true });
+    connection = await pool.getConnection();
+    const [result] = await connection.query('INSERT INTO rules (address, value, text) VALUES (?, ?, ?)', [address, value, text]);
+    return NextResponse.json({ id: result.insertId, success: true });
   } catch (error) {
-    return NextResponse.json({ error: 'Fehler beim Einfügen der Regel in die Datenbank' }, { status: 500 });
+    console.error('Fehler beim Hinzufügen der Regel:', error);
+    return NextResponse.json({ error: 'Fehler beim Hinzufügen der Regel' }, { status: 500 });
+  } finally {
+    if (connection) connection.release();
   }
 }

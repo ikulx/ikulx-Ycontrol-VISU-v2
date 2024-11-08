@@ -1,41 +1,31 @@
-// /app/api/rules/[id]/route.ts
 import { NextResponse } from 'next/server';
-import { openDB } from '@/lib/db';
+import pool from '@/lib/mariadb';
 
-// DELETE-Methode: Regel löschen
-export async function DELETE(request: Request, { params }: { params: { id: string } }) {
-  const db = await openDB();
-  
+export async function PUT(request: Request, { params }: { params: { id: string } }) {
+  const { address, value, text } = await request.json();
+  let connection;
   try {
-    const query = 'DELETE FROM rules WHERE id = ?';
-    await db.run(query, [params.id]);
+    connection = await pool.getConnection();
+    await connection.query('UPDATE rules SET address = ?, value = ?, text = ? WHERE id = ?', [address, value, text, params.id]);
     return NextResponse.json({ success: true });
   } catch (error) {
-    return NextResponse.json({ error: 'Fehler beim Löschen der Regel' }, { status: 500 });
+    console.error('Fehler beim Aktualisieren der Regel:', error);
+    return NextResponse.json({ error: 'Fehler beim Aktualisieren der Regel' }, { status: 500 });
+  } finally {
+    if (connection) connection.release();
   }
 }
 
-// PUT-Methode: Regel aktualisieren
-export async function PUT(request: Request, { params }: { params: { id: string } }) {
-    const db = await openDB();
-    const body = await request.json();
-  
-    const { trigger_parameter, condition_value, operator, rule_type, affected_value, action } = body;
-  
-    // Überprüfen, ob alle erforderlichen Felder vorhanden sind
-    if (!trigger_parameter || !condition_value || !operator || !rule_type || !affected_value || !action) {
-      return NextResponse.json({ error: 'Fehlende erforderliche Felder' }, { status: 400 });
-    }
-  
-    try {
-      const query = `
-        UPDATE rules 
-        SET trigger_parameter = ?, condition_value = ?, operator = ?, rule_type = ?, affected_value = ?, action = ?
-        WHERE id = ?
-      `;
-      await db.run(query, [trigger_parameter, condition_value, operator, rule_type, affected_value, action, params.id]);
-      return NextResponse.json({ success: true });
-    } catch (error) {
-      return NextResponse.json({ error: 'Fehler beim Aktualisieren der Regel' }, { status: 500 });
-    }
+export async function DELETE(request: Request, { params }: { params: { id: string } }) {
+  let connection;
+  try {
+    connection = await pool.getConnection();
+    await connection.query('DELETE FROM rules WHERE id = ?', [params.id]);
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error('Fehler beim Löschen der Regel:', error);
+    return NextResponse.json({ error: 'Fehler beim Löschen der Regel' }, { status: 500 });
+  } finally {
+    if (connection) connection.release();
   }
+}

@@ -9,12 +9,15 @@ import useBreakpoint from 'antd/lib/grid/hooks/useBreakpoint';
 
 // Importiere den MQTT-Client nur, wenn wir uns auf der Serverseite befinden
 if (typeof window === 'undefined') {
-  require('@/lib/mqttClient'); // Importiere mqttClient.ts nur auf dem Server
+  require('@/lib/mqttClientAlarms'); // Importiere mqttClient.ts nur auf dem Server
 }
 
 interface LayoutProps {
   children: ReactNode;
 }
+
+
+
 
 export default function RootLayout({ children }: LayoutProps) {
   const [loading, setLoading] = useState(true);
