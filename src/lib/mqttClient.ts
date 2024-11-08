@@ -3,6 +3,10 @@ import pool from './mariadb'
 
 const client = mqtt.connect(process.env.MQTT_BROKER_URL || 'mqtt://192.168.10.31:1883')
 
+let lastClearTime = 0
+const clearDelay = 10000 // 10 Sekunden
+const addressLastNonZeroValue = new Map<number, number>()
+
 client.on('connect', () => {
   console.log('Connected to MQTT broker')
   client.subscribe('modbus/alarm')
@@ -16,6 +20,13 @@ client.on('message', async (topic, message) => {
         console.error('Received MQTT message is not an array:', data)
         return
       }
+
+      const currentTime = Date.now()
+      if (currentTime - lastClearTime < clearDelay) {
+        console.log('Skipping alarm processing due to recent clear operation')
+        return
+      }
+
       for (const item of data) {
         if (typeof item.address === 'undefined' || typeof item.value === 'undefined') {
           console.error('Invalid item in MQTT message:', item)
@@ -41,8 +52,14 @@ client.on('message', async (topic, message) => {
           )
 
           const lastValue = lastValueRows.length > 0 ? lastValueRows[0].value : null
+          const lastNonZeroValue = addressLastNonZeroValue.get(addressId) || null
 
           if (lastValue !== item.value) {
+            // Wenn der neue Wert 0 ist und der letzte Nicht-Null-Wert auch 0 war, überspringe diesen Eintrag
+            if (item.value === 0 && lastNonZeroValue === 0) {
+              continue
+            }
+
             const [rulesRows] = await pool.query('SELECT * FROM rules WHERE address_id = ?', [addressId])
             
             for (const rule of rulesRows) {
@@ -62,6 +79,11 @@ client.on('message', async (topic, message) => {
                 }
               }
             }
+
+            // Aktualisiere den letzten Nicht-Null-Wert für diese Adresse
+            if (item.value !== 0) {
+              addressLastNonZeroValue.set(addressId, item.value)
+            }
           }
         }
       }
@@ -72,3 +94,8 @@ client.on('message', async (topic, message) => {
 })
 
 export default client
+
+// Funktion zum Aktualisieren der lastClearTime
+export function updateLastClearTime() {
+  lastClearTime = Date.now()
+}

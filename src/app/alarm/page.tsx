@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Table, Typography, Button, message } from 'antd'
+import { Table, Typography, Button, message, Spin } from 'antd'
 import type { ColumnsType } from 'antd/es/table'
 
 const { Title } = Typography
@@ -17,6 +17,7 @@ interface Alarm {
 
 export default function Home() {
   const [activeAlarms, setActiveAlarms] = useState<Alarm[]>([])
+  const [isLoading, setIsLoading] = useState(false)
   const basePath = process.env.NEXT_PUBLIC_BASE_PATH || '';
 
   useEffect(() => {
@@ -49,16 +50,24 @@ export default function Home() {
 
   const handleClearAlarms = async () => {
     try {
+      setIsLoading(true)
       const response = await fetch(`${basePath}/api/alarm/clear-alarms`, { method: 'POST' })
       if (response.ok) {
-        message.success('Alle Alarme wurden quittiert')
-        setActiveAlarms([]) // Leere die Liste der aktiven Alarme
+        // message.success('Alle Alarme wurden quittiert')
+        setActiveAlarms([])
+        
+        // Warte 10 Sekunden, bevor der Ladevorgang beendet wird
+        setTimeout(() => {
+          setIsLoading(false)
+        }, 10000)
       } else {
         message.error('Fehler beim Quittieren der Alarme')
+        setIsLoading(false)
       }
     } catch (error) {
       console.error('Error clearing alarms:', error)
       message.error('Fehler beim Quittieren der Alarme')
+      setIsLoading(false)
     }
   }
 
@@ -94,17 +103,18 @@ export default function Home() {
   return (
     <div style={{ maxWidth: 1200, margin: '0 auto', padding: 24, minHeight: '100vh', backgroundColor: '#141414' }}>
       <Title level={2} style={{ color: '#ffffff', marginBottom: 16 }}>Aktive Alarme</Title>
-      <Table 
-        columns={columns} 
-        dataSource={activeAlarms} 
-        rowKey="id"
-        pagination={false}
-        style={{ marginBottom: 16 }}
-      />
-      <Button type="primary" onClick={handleClearAlarms}>
+      <Spin spinning={isLoading} tip="Quittieren...">
+        <Table 
+          columns={columns} 
+          dataSource={activeAlarms} 
+          rowKey="id"
+          pagination={false}
+          style={{ marginBottom: 16 }}
+        />
+      </Spin>
+      <Button type="primary" onClick={handleClearAlarms} disabled={isLoading}>
         Alarme quittieren
       </Button>
     </div>
   )
 }
-
