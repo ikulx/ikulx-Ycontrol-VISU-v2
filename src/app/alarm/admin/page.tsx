@@ -1,174 +1,86 @@
+'use client'
 
-'use client';
+import { useState, useEffect } from 'react'
+import { Button, List, Typography, Modal } from 'antd'
+import { EditOutlined } from '@ant-design/icons'
+import { AddressModal } from '@/components/AddressModal'
 
-import { useEffect, useState } from 'react';
+const { Title } = Typography
 
-type Address = {
-  address: number;
-  name: string;
-  value: number;
-};
-
-type Rule = {
-  id: number;
-  address: number;
-  condition_value: number;
-  text_in: string;
-  text_out: string;
-};
+interface Address {
+  id: number
+  address: number
+  name: string
+  rules: { id: number; condition: string; message: string }[]
+}
 
 export default function AdminPage() {
-  const [addresses, setAddresses] = useState<Address[]>([]);
-  const [rules, setRules] = useState<Rule[]>([]);
-  const [newRule, setNewRule] = useState<Partial<Rule>>({});
+  const [addresses, setAddresses] = useState<Address[]>([])
+  const [selectedAddress, setSelectedAddress] = useState<Address | null>(null)
+  const [isModalOpen, setIsModalOpen] = useState(false)
   const basePath = process.env.NEXT_PUBLIC_BASE_PATH || '';
 
   useEffect(() => {
-    // Lade Adressen und Regeln beim Initialisieren der Seite
-    const fetchData = async () => {
-      try {
-        const addressesResponse = await fetch(`${basePath}/api/alarm/addresses`);
-        const rulesResponse = await fetch(`${basePath}/api/alarm/rules`);
-        const addressesData = await addressesResponse.json();
-        const rulesData = await rulesResponse.json();
+    fetchAddresses()
+  }, [])
 
-        setAddresses(addressesData);
-        setRules(rulesData);
-      } catch (error) {
-        console.error('Error fetching data:', error);
-      }
-    };
+  const fetchAddresses = async () => {
+    const response = await fetch(`${basePath}/api/alarm/addresses`)
+    const data = await response.json()
+    setAddresses(data)
+  }
 
-    fetchData();
-  }, []);
+  const handleOpenModal = (address: Address) => {
+    setSelectedAddress(address)
+    setIsModalOpen(true)
+  }
 
-  // Funktion zum Aktualisieren des Namens einer Adresse
-  const handleNameChange = async (address: number, name: string) => {
-    try {
-      const response = await fetch(`${basePath}/api/alarm/update-name`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ address, name }),
-      });
+  const handleCloseModal = () => {
+    setSelectedAddress(null)
+    setIsModalOpen(false)
+  }
 
-      if (response.ok) {
-        setAddresses((prevAddresses) =>
-          prevAddresses.map((a) => (a.address === address ? { ...a, name } : a))
-        );
-      } else {
-        console.error('Failed to update name');
-      }
-    } catch (error) {
-      console.error('Error updating name:', error);
-    }
-  };
+  const handleSaveAddress = async (address: number, name: string, rules: { id: number; condition: string; message: string }[]) => {
+    await fetch(`${basePath}/api/alarm/addresses`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ address, name, rules }),
+    })
+    fetchAddresses()
+  }
 
-  // Funktion zum Hinzufügen einer neuen Regel
-  const handleAddRule = async () => {
-    if (!newRule.address || newRule.condition_value === undefined || !newRule.text_in || !newRule.text_out) {
-      alert('Please fill in all fields for the new rule');
-      return;
-    }
-
-    try {
-      const response = await fetch(`${basePath}/api/alarm/rules/add`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(newRule),
-      });
-
-      if (response.ok) {
-        const rule = await response.json();
-        setRules((prevRules) => [...prevRules, rule]);
-        setNewRule({});
-      } else {
-        console.error('Failed to add rule');
-      }
-    } catch (error) {
-      console.error('Error adding rule:', error);
-    }
-  };
-
-  // Benutzeroberfläche
   return (
-    <div>
-      <h1>Admin: Manage Addresses and Rules</h1>
-
-      <h2>Addresses</h2>
-      <ul>
-        {addresses.map((address) => (
-          <li key={address.address}>
-            <strong>Address:</strong> {address.address}
-            <input
-              type="text"
-              value={address.name || ''}
-              onChange={(e) => handleNameChange(address.address, e.target.value)}
-              placeholder="Enter name"
+    <div style={{ maxWidth: 800, margin: '0 auto', padding: 24 }}>
+      <Title level={2}>Adressverwaltung</Title>
+      <List
+        dataSource={addresses}
+        renderItem={(address) => (
+          <List.Item
+            actions={[
+              <Button 
+                key="edit" 
+                icon={<EditOutlined />} 
+                onClick={() => handleOpenModal(address)}
+              >
+                Bearbeiten
+              </Button>
+            ]}
+          >
+            <List.Item.Meta
+              title={`Adresse: ${address.address}`}
+              description={`Name: ${address.name || 'Nicht zugewiesen'}`}
             />
-          </li>
-        ))}
-      </ul>
-
-      <h2>Rules</h2>
-      <table>
-        <thead>
-          <tr>
-            <th>Address</th>
-            <th>Condition Value</th>
-            <th>Text In</th>
-            <th>Text Out</th>
-          </tr>
-        </thead>
-        <tbody>
-          {rules.map((rule) => (
-            <tr key={rule.id}>
-              <td>{rule.address}</td>
-              <td>{rule.condition_value}</td>
-              <td>{rule.text_in}</td>
-              <td>{rule.text_out}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-
-      <h3>Add New Rule</h3>
-      <form
-        onSubmit={(e) => {
-          e.preventDefault();
-          handleAddRule();
-        }}
-      >
-        <select
-          value={newRule.address || ''}
-          onChange={(e) => setNewRule({ ...newRule, address: parseInt(e.target.value) })}
-        >
-          <option value="">Select Address</option>
-          {addresses.map((address) => (
-            <option key={address.address} value={address.address}>
-              {address.address}
-            </option>
-          ))}
-        </select>
-        <input
-          type="number"
-          placeholder="Condition Value"
-          value={newRule.condition_value || ''}
-          onChange={(e) => setNewRule({ ...newRule, condition_value: parseInt(e.target.value) })}
+          </List.Item>
+        )}
+      />
+      {selectedAddress && (
+        <AddressModal
+          isOpen={isModalOpen}
+          onClose={handleCloseModal}
+          address={selectedAddress}
+          onSave={handleSaveAddress}
         />
-        <input
-          type="text"
-          placeholder="Text In"
-          value={newRule.text_in || ''}
-          onChange={(e) => setNewRule({ ...newRule, text_in: e.target.value })}
-        />
-        <input
-          type="text"
-          placeholder="Text Out"
-          value={newRule.text_out || ''}
-          onChange={(e) => setNewRule({ ...newRule, text_out: e.target.value })}
-        />
-        <button type="submit">Add Rule</button>
-      </form>
+      )}
     </div>
-  );
+  )
 }

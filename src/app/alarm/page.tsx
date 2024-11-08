@@ -1,118 +1,230 @@
+'use client'
 
+import { useState, useEffect } from 'react'
+import { Table, Typography, Button, message } from 'antd'
+import type { ColumnsType } from 'antd/es/table'
 
+const { Title } = Typography
 
-'use client';
-
-import { useEffect, useState } from 'react';
-
-type AddressData = {
+interface Alarm {
+  id: number;
+  timestamp: string;
+  address_name: string;
   address: number;
-  name: string;
+  rule_text: string;
   value: number;
-  ruleTexts: string[]; // Die Regeltexte, die angezeigt werden sollen
-};
+}
 
-export default function IndexPage() {
-  const [addresses, setAddresses] = useState<AddressData[]>([]);
+export default function Home() {
+  const [activeAlarms, setActiveAlarms] = useState<Alarm[]>([])
   const basePath = process.env.NEXT_PUBLIC_BASE_PATH || '';
 
   useEffect(() => {
-    // Erstelle eine Verbindung zur SSE-API
-    const eventSource = new EventSource(`${basePath}/api/alarm/sse`);
+    const eventSource = new EventSource(`${basePath}/api/alarm/sse`)
 
     eventSource.onmessage = (event) => {
-      console.log('Received data:', event.data);
       try {
-        const data = JSON.parse(event.data);
-        setAddresses(data);
+        const data = JSON.parse(event.data)
+        if (Array.isArray(data)) {
+          setActiveAlarms(data)
+        } else {
+          console.error('Received data is not an array:', data)
+          message.error('Fehler beim Laden der Alarmdaten')
+        }
       } catch (error) {
-        console.error('Error parsing data:', error);
+        console.error('Error parsing SSE data:', error)
+        message.error('Fehler beim Verarbeiten der Alarmdaten')
       }
-    };
+    }
 
-    // Schließe die Verbindung, wenn die Komponente unmontiert wird
+    eventSource.onerror = (error) => {
+      console.error('SSE error:', error)
+      message.error('Verbindungsfehler beim Laden der Alarmdaten')
+    }
+
     return () => {
-      eventSource.close();
-    };
-  }, []);
+      eventSource.close()
+    }
+  }, [])
+
+  const handleClearAlarms = async () => {
+    try {
+      const response = await fetch(`${basePath}/api/alarm/clear-alarms`, { method: 'POST' })
+      if (response.ok) {
+        message.success('Alle Alarme wurden quittiert')
+        setActiveAlarms([]) // Leere die Liste der aktiven Alarme
+      } else {
+        message.error('Fehler beim Quittieren der Alarme')
+      }
+    } catch (error) {
+      console.error('Error clearing alarms:', error)
+      message.error('Fehler beim Quittieren der Alarme')
+    }
+  }
+
+  const columns: ColumnsType<Alarm> = [
+    {
+      title: 'Zeitstempel',
+      dataIndex: 'timestamp',
+      key: 'timestamp',
+      render: (text) => new Date(text).toLocaleString(),
+    },
+    {
+      title: 'Adresse',
+      dataIndex: 'address',
+      key: 'address',
+    },
+    {
+      title: 'Name der Adresse',
+      dataIndex: 'address_name',
+      key: 'address_name',
+    },
+    {
+      title: 'Text der Regel',
+      dataIndex: 'rule_text',
+      key: 'rule_text',
+    },
+    {
+      title: 'Wert',
+      dataIndex: 'value',
+      key: 'value',
+    },
+  ]
 
   return (
-    <div>
-      <h1>Address Overview with Rules</h1>
-      <ul>
-        {addresses.length > 0 ? (
-          addresses.map((address) => (
-            <li key={address.address}>
-              <strong>{address.name}</strong> (Value: {address.value})
-              <ul>
-                {/* Überprüfe, ob ruleTexts ein Array ist, bevor du map() aufrufst */}
-                {Array.isArray(address.ruleTexts) ? (
-                  address.ruleTexts.map((text, index) => <li key={index}>{text}</li>)
-                ) : (
-                  <li>No rules available</li>
-                )}
-              </ul>
-            </li>
-          ))
-        ) : (
-          <p>No addresses with names and rules available.</p>
-        )}
-      </ul>
+    <div style={{ maxWidth: 1200, margin: '0 auto', padding: 24, minHeight: '100vh', backgroundColor: '#141414' }}>
+      <Title level={2} style={{ color: '#ffffff', marginBottom: 16 }}>Aktive Alarme</Title>
+      <Table 
+        columns={columns} 
+        dataSource={activeAlarms} 
+        rowKey="id"
+        pagination={false}
+        style={{ marginBottom: 16 }}
+      />
+      <Button type="primary" onClick={handleClearAlarms}>
+        Alarme quittieren
+      </Button>
     </div>
-  );
+  )
 }
 
 
-'use client';
+'use client'
 
-import { useEffect, useState } from 'react';
+import { useState, useEffect } from 'react'
+import { Table, Typography, Button, message, Spin } from 'antd'
+import type { ColumnsType } from 'antd/es/table'
 
-type AddressData = {
+const { Title } = Typography
+
+interface Alarm {
+  id: number;
+  timestamp: string;
+  address_name: string;
   address: number;
-  name: string;
+  rule_text: string;
   value: number;
-  ruleText: string; // Nur ein Regeltext wird angezeigt
-};
+}
 
-export default function IndexPage() {
-  const [addresses, setAddresses] = useState<AddressData[]>([]);
-  const basePath = process.env.NEXT_PUBLIC_BASE_PATH || '';
+export default function Home() {
+  const [activeAlarms, setActiveAlarms] = useState<Alarm[]>([])
+  const [isLoading, setIsLoading] = useState(false)
 
   useEffect(() => {
-    // Erstelle eine Verbindung zur SSE-API
-    const eventSource = new EventSource('/api/sse');
+    const eventSource = new EventSource('/api/alarm/sse')
 
     eventSource.onmessage = (event) => {
-      console.log('Received data:', event.data);
       try {
-        const data = JSON.parse(event.data);
-        setAddresses(data);
+        const data = JSON.parse(event.data)
+        if (Array.isArray(data)) {
+          setActiveAlarms(data)
+        } else {
+          console.error('Received data is not an array:', data)
+          message.error('Fehler beim Laden der Alarmdaten')
+        }
       } catch (error) {
-        console.error('Error parsing data:', error);
+        console.error('Error parsing SSE data:', error)
+        message.error('Fehler beim Verarbeiten der Alarmdaten')
       }
-    };
+    }
 
-    // Schließe die Verbindung, wenn die Komponente unmontiert wird
+    eventSource.onerror = (error) => {
+      console.error('SSE error:', error)
+      message.error('Verbindungsfehler beim Laden der Alarmdaten')
+    }
+
     return () => {
-      eventSource.close();
-    };
-  }, []);
+      eventSource.close()
+    }
+  }, [])
+
+  const handleClearAlarms = async () => {
+    try {
+      setIsLoading(true)
+      const response = await fetch('/api/clear-alarms', { method: 'POST' })
+      if (response.ok) {
+        message.success('Alle Alarme wurden quittiert')
+        setActiveAlarms([])
+        
+        // Warte 10 Sekunden, bevor der Ladevorgang beendet wird
+        setTimeout(() => {
+          setIsLoading(false)
+        }, 10000)
+      } else {
+        message.error('Fehler beim Quittieren der Alarme')
+        setIsLoading(false)
+      }
+    } catch (error) {
+      console.error('Error clearing alarms:', error)
+      message.error('Fehler beim Quittieren der Alarme')
+      setIsLoading(false)
+    }
+  }
+
+  const columns: ColumnsType<Alarm> = [
+    {
+      title: 'Zeitstempel',
+      dataIndex: 'timestamp',
+      key: 'timestamp',
+      render: (text) => new Date(text).toLocaleString(),
+    },
+    {
+      title: 'Adresse',
+      dataIndex: 'address',
+      key: 'address',
+    },
+    {
+      title: 'Name der Adresse',
+      dataIndex: 'address_name',
+      key: 'address_name',
+    },
+    {
+      title: 'Text der Regel',
+      dataIndex: 'rule_text',
+      key: 'rule_text',
+    },
+    {
+      title: 'Wert',
+      dataIndex: 'value',
+      key: 'value',
+    },
+  ]
 
   return (
-    <div>
-      <h1>Address Overview with Rules</h1>
-      <ul>
-        {addresses.length > 0 ? (
-          addresses.map((address) => (
-            <li key={address.address}>
-              <strong>{address.name}</strong> (Value: {address.value})
-              <p>{address.ruleText}</p>
-            </li>
-          ))
-        ) : (
-          <p>No addresses with names and rules available.</p>
-        )}
-      </ul>
+    <div style={{ maxWidth: 1200, margin: '0 auto', padding: 24, minHeight: '100vh', backgroundColor: '#141414' }}>
+      <Title level={2} style={{ color: '#ffffff', marginBottom: 16 }}>Aktive Alarme</Title>
+      <Spin spinning={isLoading} tip="Bitte warten...">
+        <Table 
+          columns={columns} 
+          dataSource={activeAlarms} 
+          rowKey="id"
+          pagination={false}
+          style={{ marginBottom: 16 }}
+        />
+      </Spin>
+      <Button type="primary" onClick={handleClearAlarms} disabled={isLoading}>
+        Alarme quittieren
+      </Button>
     </div>
-  );
+  )
 }
