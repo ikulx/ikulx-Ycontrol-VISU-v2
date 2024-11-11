@@ -6,7 +6,9 @@ const pool = mysql.createPool({
   user: 'Ygnis',
   password: 'Ygnis6017',
   database: 'Ycontrol',
-  connectionLimit: 10
+  waitForConnections: true,
+  connectionLimit: 10,
+  queueLimit: 0
 })
 
 export default  pool ;

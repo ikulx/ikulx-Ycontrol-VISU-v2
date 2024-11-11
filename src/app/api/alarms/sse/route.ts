@@ -1,42 +1,53 @@
-import { NextRequest } from 'next/server';
+import { NextResponse } from 'next/server';
 import pool from '@/lib/mariadb';
 
-export async function GET(request: NextRequest) {
+export async function GET(request: Request) {
   const encoder = new TextEncoder();
 
   const stream = new ReadableStream({
     async start(controller) {
-      const sendAlarms = async () => {
+      const sendData = async () => {
         let connection;
         try {
           connection = await pool.getConnection();
-          const [alarms] = await connection.query(`
-            SELECT DISTINCT a.id, a.address, m.name, m.old_value, a.new_value, a.timestamp, a.text
-            FROM alarms a
-            JOIN mqtt_data m ON a.address = m.address
-            ORDER BY a.timestamp DESC
+
+          // Fetch current alarms
+          const [currentAlarms] = await connection.query(`
+            SELECT id, address, address_name, new_value, timestamp, text, priority
+            FROM alarms
+            ORDER BY timestamp DESC
+          `);
+
+          // Fetch all alarms (including quittanced)
+          const [allAlarms] = await connection.query(`
+            SELECT id, address, address_name, new_value, timestamp, text, quittanced, quittanced_at, entry_type, priority
+            FROM all_alarms
+            ORDER BY timestamp DESC
             LIMIT 100
           `);
-          
-          const data = JSON.stringify(alarms);
-          controller.enqueue(encoder.encode(`data: ${data}\n\n`));
+
+          // Prepare SSE data
+          const sseData = `data: ${JSON.stringify({ currentAlarms, allAlarms })}\n\n`;
+
+          // Send data to the client
+          controller.enqueue(encoder.encode(sseData));
         } catch (error) {
-          console.error('Fehler beim Abrufen der Alarme:', error);
+          console.error('Error fetching alarm data:', error);
           controller.error(error);
         } finally {
           if (connection) connection.release();
         }
       };
 
-      // Initiales Senden der Daten
-      await sendAlarms();
+      // Send initial data
+      await sendData();
 
-      // Periodisches Senden der Daten
-      const interval = setInterval(sendAlarms, 5000);
+      // Set up interval to send data every 5 seconds
+      const intervalId = setInterval(sendData, 5000);
 
-      // Aufräumen, wenn die Verbindung geschlossen wird
+      // Handle client disconnection
       request.signal.addEventListener('abort', () => {
-        clearInterval(interval);
+        clearInterval(intervalId);
         controller.close();
       });
     },
@@ -45,7 +56,7 @@ export async function GET(request: NextRequest) {
   return new Response(stream, {
     headers: {
       'Content-Type': 'text/event-stream',
-      'Cache-Control': 'no-cache',
+      'Cache-Control': 'no-cache, no-transform',
       'Connection': 'keep-alive',
     },
   });
