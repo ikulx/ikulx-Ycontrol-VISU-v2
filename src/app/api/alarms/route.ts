@@ -1,3 +1,4 @@
+// Pfad: src\app\api\alarms\route.ts
 import { NextResponse } from 'next/server';
 import pool from '@/lib/mariadb';
 

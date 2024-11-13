@@ -1,3 +1,4 @@
+// Pfad: src\app\api\hkl\[hklId]\route.ts
 import { NextResponse } from 'next/server';
 import { openDB } from '@/lib/db';
 

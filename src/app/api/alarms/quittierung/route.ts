@@ -1,3 +1,5 @@
+// Pfad: src\app\api\alarms\quittierung\route.ts
+
 import { NextResponse } from 'next/server';
 import { startQuittierung, getQuittierungStatus } from '@/lib/mqttClientAlarms';
 import { clearAlarms, resetValues, quittanceAllAlarms } from '@/lib/alarmProcessor';

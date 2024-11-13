@@ -1,3 +1,5 @@
+// Pfad: src\app\hkl\[hklId]\page.tsx
+
 // Dies ist eine Server-Komponente (kein 'use client')
 import HklClientComponent from './HklClientComponent';
 import { openDB } from '@/lib/db';

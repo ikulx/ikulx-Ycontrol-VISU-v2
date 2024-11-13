@@ -1,7 +1,8 @@
+// Pfad: src\lib\mqttClientAlarms.ts
 import mqtt from 'mqtt';
 import { processAlarmData } from './alarmProcessor';
 
-const MQTT_BROKER_URL = 'mqtt://192.168.10.31:1883'; // Ersetzen Sie dies durch Ihre tatsächliche MQTT-Broker-URL
+const MQTT_BROKER_URL = 'mqtt://192.168.10.31:1883';
 const MQTT_TOPIC = 'modbus/alarm/data';
 
 let isQuittierungActive = false;
@@ -14,7 +15,7 @@ function startMqttClientAlarms() {
     console.log('Verbunden mit MQTT Broker');
     client.subscribe(MQTT_TOPIC, (err) => {
       if (!err) {
-        console.log(`Abonniert Topic: ${MQTT_TOPIC}`);
+        console.log('Abonniert Topic:', {MQTT_TOPIC});
       } else {
         console.error('Fehler beim Abonnieren des Topics:', err);
       }
@@ -22,7 +23,7 @@ function startMqttClientAlarms() {
   });
 
   client.on('message', (topic, message) => {
-    console.log(`Nachricht empfangen auf Topic ${topic}`);
+    // console.log(Nachricht empfangen auf Topic ${topic});
     if (!isQuittierungActive) {
       processAlarmData(message);
     } else {
@@ -45,7 +46,7 @@ export function startQuittierung() {
 
   isQuittierungActive = true;
   console.log('Quittierung gestartet');
-  
+
   if (quittierungTimer) {
     clearTimeout(quittierungTimer);
   }

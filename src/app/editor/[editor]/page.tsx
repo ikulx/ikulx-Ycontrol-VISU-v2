@@ -1,3 +1,4 @@
+// Pfad: src\app\editor\[editor]\page.tsx
 'use client';
 
 import { useState, useEffect } from 'react';

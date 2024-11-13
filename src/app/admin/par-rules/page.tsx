@@ -1,3 +1,5 @@
+// Pfad: src\app\admin\par-rules\page.tsx
+
 "use client"; 
 
 import { Select, Form, Input, Button, Radio, Table, Popconfirm, message, Modal } from 'antd';

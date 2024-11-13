@@ -1,3 +1,5 @@
+// Pfad: src\app\api\rules\[id]\route.ts
+
 import { NextResponse } from 'next/server';
 import pool from '@/lib/mariadb';
 

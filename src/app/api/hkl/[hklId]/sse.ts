@@ -1,3 +1,4 @@
+// Pfad: src\app\api\hkl\[hklId]\sse.ts
 import { openDB } from '@/lib/db';
 import type { NextRequest } from 'next/server';
 

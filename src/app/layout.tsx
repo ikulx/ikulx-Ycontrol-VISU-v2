@@ -1,3 +1,4 @@
+// Pfad: src\app\layout.tsx
 'use client';
 
 import 'antd/dist/reset.css'; // Ant Design reset styles

@@ -1,3 +1,5 @@
+// src/app/api/alarms/all/route.ts
+
 import { NextResponse } from 'next/server';
 import pool from '@/lib/mariadb';
 
@@ -8,11 +10,9 @@ export async function GET() {
     const [allAlarms] = await connection.query('SELECT * FROM all_alarms ORDER BY timestamp DESC');
     return NextResponse.json(allAlarms);
   } catch (error) {
-    console.error('Error fetching all alarms:', error);
-    return NextResponse.json({ error: 'Error fetching all alarms' }, { status: 500 });
+    console.error('Fehler beim Abrufen der Alarme:', error);
+    return NextResponse.json({ error: 'Fehler beim Abrufen der Alarme' }, { status: 500 });
   } finally {
-    if (connection) {
-      connection.release();
-    }
+    if (connection) connection.release();
   }
 }
