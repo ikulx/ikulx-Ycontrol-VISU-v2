@@ -1,28 +1,49 @@
+// src/app/api/rules/route.ts
+
 import { NextResponse } from 'next/server';
 import pool from '@/lib/mariadb';
+import { RowDataPacket, FieldPacket, ResultSetHeader } from 'mysql2/promise';
 
-export async function PUT(request: Request) {
-  const { address, name, rules } = await request.json();
+interface Rule extends RowDataPacket {
+  id: number;
+  address: string;
+  value: string | null;
+  text: string | null;
+  priority: string;
+  rule_type: string;
+  bit_rules?: BitRule[];
+}
+
+interface BitRule extends RowDataPacket {
+  id: number;
+  rule_id: number;
+  bit_position: number;
+  text_on: string;
+  text_off: string;
+  priority: string;
+}
+
+export async function GET() {
   let connection;
-
   try {
     connection = await pool.getConnection();
+    
+    // Typen explizit ohne generische Angabe für query deklarieren
+    const [rules] = await connection.query('SELECT * FROM rules') as [Rule[], FieldPacket[]];
+    const [bitRules] = await connection.query('SELECT * FROM bit_rules') as [BitRule[], FieldPacket[]];
 
-    // Aktualisiere den Namen der Adresse
-    await connection.query('UPDATE mqtt_data SET name = ? WHERE address = ?', [name, address]);
+    // Kombinieren der Regeln mit ihren Bit-Regeln
+    const combinedRules = rules.map((rule) => {
+      if (rule.rule_type === 'bit') {
+        rule.bit_rules = bitRules.filter((br) => br.rule_id === rule.id);
+      }
+      return rule;
+    });
 
-    // Lösche alle bestehenden Regeln für diese Adresse
-    await connection.query('DELETE FROM rules WHERE address = ?', [address]);
-
-    // Füge die neuen Regeln hinzu
-    for (const rule of rules) {
-      await connection.query('INSERT INTO rules (address, value, text) VALUES (?, ?, ?)', [address, rule.value, rule.text]);
-    }
-
-    return NextResponse.json({ success: true });
+    return NextResponse.json(combinedRules);
   } catch (error) {
-    console.error('Fehler beim Aktualisieren der Adresse und Regeln:', error);
-    return NextResponse.json({ error: 'Fehler beim Aktualisieren der Adresse und Regeln' }, { status: 500 });
+    console.error('Fehler beim Abrufen der Regeln:', error);
+    return NextResponse.json({ error: 'Fehler beim Abrufen der Regeln' }, { status: 500 });
   } finally {
     if (connection) connection.release();
   }

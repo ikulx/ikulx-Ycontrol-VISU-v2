@@ -1,0 +1,32 @@
+version: '3.8'
+
+services:
+  # MariaDB-Datenbank-Service
+  mariadb:
+    image: mariadb:latest  # MariaDB ist ARM-kompatibel
+    environment:
+      - MYSQL_ROOT_PASSWORD=rootpassword
+      - MYSQL_DATABASE=Ycontrol
+      - MYSQL_USER=Ygnis
+      - MYSQL_PASSWORD=Ygnis6017
+    ports:
+      - '3306:3306'
+    volumes:
+      - ./db_init/dump-Ycontrol-202411121137.sql:/docker-entrypoint-initdb.d/init.sql
+
+  # Next.js-Anwendung
+  nextjs-app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      platform: linux/arm64  # Stellt sicher, dass ARM-Images auf dem Pi verwendet werden
+    environment:
+      - NEXT_PUBLIC_BASE_PATH=/dein/pfad  # Setze den BASE_PATH falls nötig
+      - DB_HOST=mariadb
+      - DB_USER=Ygnis
+      - DB_PASSWORD=Ygnis6017
+      - DB_NAME=Ycontrol
+    ports:
+      - '3000:3000'
+    depends_on:
+      - mariadb

@@ -1,3 +1,4 @@
+// Pfad: src\app\settings\page.tsx
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';

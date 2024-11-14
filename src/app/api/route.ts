@@ -1,3 +1,4 @@
+// Pfad: src\app\api\route.ts
 import startMqttClientAlarms from '@/lib/mqttClientAlarms';
 
 export function GET() {

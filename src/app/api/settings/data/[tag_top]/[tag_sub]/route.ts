@@ -1,3 +1,4 @@
+// Pfad: src\app\api\settings\data\[tag_top]\[tag_sub]\route.ts
 import { NextResponse } from 'next/server';
 import { openDB } from '@/lib/db';
 

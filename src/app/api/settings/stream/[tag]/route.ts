@@ -1,3 +1,4 @@
+// Pfad: src\app\api\settings\stream\[tag]\route.ts
 import { NextResponse } from 'next/server';
 import { openDB } from '../../../../../lib/db';  // Verbindung zur SQLite-Datenbank
 

@@ -1,58 +1,58 @@
-import mqtt from 'mqtt';
+import mqtt, { MqttClient } from 'mqtt';
 import { processAlarmData } from './alarmProcessor';
 
-const MQTT_BROKER_URL = 'mqtt://192.168.10.31:1883'; // Ersetzen Sie dies durch Ihre tatsächliche MQTT-Broker-URL
+const MQTT_BROKER_URL = 'mqtt://192.168.10.31:1883';
 const MQTT_TOPIC = 'modbus/alarm/data';
 
 let isQuittierungActive = false;
 let quittierungTimer: NodeJS.Timeout | null = null;
+let client: MqttClient | null = null; // Define client with proper type
 
 function startMqttClientAlarms() {
-  const client = mqtt.connect(MQTT_BROKER_URL);
+  if (process.env.NODE_ENV !== 'production') {
+    client = mqtt.connect(MQTT_BROKER_URL);
 
-  client.on('connect', () => {
-    console.log('Verbunden mit MQTT Broker');
-    client.subscribe(MQTT_TOPIC, (err) => {
-      if (!err) {
-        console.log(`Abonniert Topic: ${MQTT_TOPIC}`);
+    client.on('connect', () => {
+      console.log('Connected to MQTT Broker');
+      client?.subscribe(MQTT_TOPIC, (err) => {
+        if (!err) {
+          console.log('Subscribed to Topic:', MQTT_TOPIC);
+        } else {
+          console.error('Error subscribing to topic:', err);
+        }
+      });
+    });
+
+    client.on('message', (topic, message) => {
+      if (!isQuittierungActive) {
+        processAlarmData(message);
       } else {
-        console.error('Fehler beim Abonnieren des Topics:', err);
+        console.log('Quittierung active, message ignored');
       }
     });
-  });
 
-  client.on('message', (topic, message) => {
-    console.log(`Nachricht empfangen auf Topic ${topic}`);
-    if (!isQuittierungActive) {
-      processAlarmData(message);
-    } else {
-      console.log('Quittierung aktiv, Nachricht wird ignoriert');
-    }
-  });
-
-  client.on('error', (error) => {
-    console.error('MQTT Verbindungsfehler:', error);
-  });
-
-  return client;
+    client.on('error', (error) => {
+      console.error('MQTT connection error:', error);
+    });
+  }
 }
 
 export function startQuittierung() {
   if (isQuittierungActive) {
-    console.log('Quittierung bereits aktiv');
+    console.log('Quittierung already active');
     return;
   }
 
   isQuittierungActive = true;
-  console.log('Quittierung gestartet');
-  
+  console.log('Quittierung started');
+
   if (quittierungTimer) {
     clearTimeout(quittierungTimer);
   }
 
   quittierungTimer = setTimeout(() => {
     isQuittierungActive = false;
-    console.log('Quittierung beendet');
+    console.log('Quittierung ended');
     quittierungTimer = null;
   }, 15000);
 }

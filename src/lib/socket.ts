@@ -1,3 +1,5 @@
+// Pfad: src\lib\socket.ts
+
 import { Server } from "socket.io";
 
 const socketHandler = (server: any) => {

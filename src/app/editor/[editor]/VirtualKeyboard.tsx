@@ -1,3 +1,5 @@
+// Pfad: src\app\editor\[editor]\VirtualKeyboard.tsx
+
 import React from 'react';
 import { Button, Row, Col } from 'antd';
 
