@@ -5,10 +5,7 @@ module.exports = {
   },
   output: "standalone",
   basePath: process.env.NEXT_PUBLIC_BASE_PATH || '',
-  reactStrictMode: true,
-  experimental: {
-    appDir: true, // Falls du App-Router verwendest
-  },
+
   env: {
     DB_HOST: process.env.BUILD_ENV === 'true' ? 'dummy_host' : process.env.DB_HOST,
     DB_USER: process.env.BUILD_ENV === 'true' ? 'dummy_user' : process.env.DB_USER,

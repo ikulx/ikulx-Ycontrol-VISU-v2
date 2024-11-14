@@ -1,14 +1,15 @@
-// Pfad: src\lib\mariadb.ts
+// src/lib/mariadb.ts
+import mysql from 'mysql2/promise';
 
-import mariadb from 'mariadb';
-
-
-const pool = mariadb.createPool({
-  host: process.env.DB_HOST,
-  user: process.env.DB_USER,
-  password: process.env.DB_PASSWORD,
-  database: process.env.DB_NAME,
-  connectionLimit: 5
+const pool = mysql.createPool({
+  host: process.env.DB_HOST || 'localhost',
+  user: process.env.DB_USER || 'root',
+  password: process.env.DB_PASSWORD || '',
+  database: process.env.DB_NAME || 'test',
+  waitForConnections: true,
+  connectionLimit: 10,
+  queueLimit: 0
 });
 
 export default pool;
+
