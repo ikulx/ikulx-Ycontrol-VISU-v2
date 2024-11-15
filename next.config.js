@@ -3,7 +3,6 @@ module.exports = {
   typescript: {
     ignoreBuildErrors: true,
   },
-  output: "standalone",
   basePath: process.env.NEXT_PUBLIC_BASE_PATH || '',
 
   env: {

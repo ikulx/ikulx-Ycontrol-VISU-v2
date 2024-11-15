@@ -1,7 +1,7 @@
 // Pfad: src\app\api\settings\tags\route.ts
 
 import { NextResponse } from 'next/server';
-import { openDB } from '../../../../lib/db'; // Verbindung zur SQLite-Datenbank
+import { openDB } from '@/lib/db'; // Verbindung zur SQLite-Datenbank
 
 export async function GET(request: Request) {
   const url = new URL(request.url);

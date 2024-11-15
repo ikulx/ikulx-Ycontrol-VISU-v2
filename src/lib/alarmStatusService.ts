@@ -1,9 +1,11 @@
+// Pfad: src\lib\alarmStatusService.ts
+
 import { connect, MqttClient } from 'mqtt';
 import pool from './mariadb';
 import { PoolConnection, RowDataPacket } from 'mysql2/promise';
 
 const MQTT_BROKER_URL = process.env.MQTT_BROKER_URL || 'mqtt://192.168.10.31:1883';
-const MQTT_TOPIC = 'modbus/alarm/status';
+const MQTT_TOPIC = process.env.MQTT_TOPIC_STATUS || 'modbus/alarm/status';
 
 let client: MqttClient | null = null; // Specify the type as MqttClient or null
 

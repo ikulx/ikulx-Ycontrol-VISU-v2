@@ -2,8 +2,8 @@
 import mqtt from 'mqtt';
 import { processAlarmData } from './alarmProcessor';
 
-const MQTT_BROKER_URL = 'mqtt://192.168.10.31:1883';
-const MQTT_TOPIC = 'modbus/alarm/data';
+const MQTT_BROKER_URL = process.env.MQTT_BROKER_URL || 'mqtt://192.168.10.31:1883';
+const MQTT_TOPIC = process.env.MQTT_TOPIC_DATA || 'modbus/alarm/daten';
 
 let isQuittierungActive = false;
 let quittierungTimer: NodeJS.Timeout | null = null;

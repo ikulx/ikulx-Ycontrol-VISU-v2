@@ -13,7 +13,17 @@ RUN npm install
 # Kopiere den Rest des Anwendungscodes
 COPY . .
 
-ENV NEXT_PUBLIC_BASE_PATH="/vis"
+# Set default environment variables
+ENV NEXT_PUBLIC_BASE_PATH="/visu"
+ENV MQTT_BROKER_URL="mqtt://192.168.10.31:1883"
+ENV MQTT_TOPIC_DATA="modbus/alarm/data"
+ENV MQTT_TOPIC_STATUS="modbus/alarm/status"
+ENV DATABASE_URL="./mnt/ycontroldata_settings.db"
+ENV DB_HOST="192.168.10.31"
+ENV DB_USER="Ygnis"
+ENV DB_PASSWORD="Ygnis6017"
+ENV DB_NAME="Ycontrol"
+
 
 # Baue die Next.js-Anwendung
 RUN npm run build

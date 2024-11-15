@@ -1,4 +1,3 @@
-
 // Path: src/app/api/alarms/sse/route.ts
 
 import { NextResponse } from 'next/server';
@@ -64,8 +63,12 @@ export async function GET(request: Request) {
   return new Response(stream, {
     headers: {
       'Content-Type': 'text/event-stream',
-      'Cache-Control': 'no-cache, no-transform',
+      'Cache-Control': 'no-cache, no-transform, must-revalidate',  // Weitere Optimierung für Cache-Vermeidung
       'Connection': 'keep-alive',
+      'X-Accel-Buffering': 'no',  // Speziell für NGINX, um Buffering zu deaktivieren
+      'Access-Control-Allow-Origin': '*',  // CORS-Header für Cross-Origin-Zugriff (anpassen, falls benötigt)
+      'Access-Control-Allow-Methods': 'GET',  // Erlaubt nur GET-Anfragen
+      'Access-Control-Allow-Headers': 'Content-Type',
     },
   });
-}
+0}
