@@ -1,21 +1,30 @@
+// Pfad: src\app\layout.tsx
 'use client';
 
 import 'antd/dist/reset.css'; // Ant Design reset styles
-import { ConfigProvider, Spin,theme } from 'antd'; 
+import { ConfigProvider, Spin, theme } from 'antd'; 
 import { LoadingOutlined } from '@ant-design/icons';
 import './globals.css'; // Custom global styles
 import { useState, useEffect, ReactNode } from 'react';
 import useBreakpoint from 'antd/lib/grid/hooks/useBreakpoint';
-import { defaultAlgorithm } from '@ant-design/compatible';
+
+
+
+
+
 
 interface LayoutProps {
   children: ReactNode;
 }
 
+
+
+
 export default function RootLayout({ children }: LayoutProps) {
   const [loading, setLoading] = useState(true);
   const screens = useBreakpoint(); // Responsive handling
-  const {  darkAlgorithm } = theme;
+  
+  const { darkAlgorithm } = theme;
 
   useEffect(() => {
     const handleLoad = () => {
@@ -23,20 +32,17 @@ export default function RootLayout({ children }: LayoutProps) {
       setLoading(false);
     };
 
-    // Überwache das Laden des CSS und anderer Ressourcen
     if (document.readyState === 'complete') {
       handleLoad();
     } else {
       window.addEventListener('load', handleLoad);
     }
 
-    // Cleanup des Event Listeners, falls die Komponente unmontiert wird
     return () => {
       window.removeEventListener('load', handleLoad);
     };
   }, []);
 
-  // Ladeanimation Icon
   const antIcon = <LoadingOutlined style={{ fontSize: 48, color: '#1890ff' }} spin />;
 
   if (loading) {
@@ -63,25 +69,22 @@ export default function RootLayout({ children }: LayoutProps) {
       <head>
         <title>Ycontrol</title>
       </head>
-      <ConfigProvider theme={{
-       algorithm: darkAlgorithm ,
-    }}><body>{children}</body></ConfigProvider>
-      
-      {/* <body style={{overflow: "hidden"}}>
-        <ConfigProvider
-          theme={{
-            token: {
-              colorPrimary: '#1890ff', // Ant Design Primary color
-              colorBgBase: '#141414', // Background color for Dark Mode
-              colorTextBase: '#ffffff', // Text color in Dark Mode
-            },
-          }}
-        >
-          <div style={{ padding: screens.md ? '20px' : '10px', backgroundColor: '#141414', minHeight: '100vh' }}>
-            {children}
-          </div>
-        </ConfigProvider>
-      </body> */}
+      <ConfigProvider
+        theme={{
+          algorithm: darkAlgorithm,
+          token: {
+            colorBgBase: '#141414',
+          },
+        }}
+      >
+        <body style={{ margin: 0, padding: 0, backgroundColor: '#141414', minHeight: '100vh' }}>
+          {children}
+        </body>
+      </ConfigProvider>
     </html>
   );
 }
+
+
+
+
