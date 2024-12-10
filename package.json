@@ -19,7 +19,7 @@
     "crypto": "^1.0.1",
     "crypto-browserify": "^3.12.1",
     "eslint-config-next": "^15.0.3",
-    "express": "^4.21.1",
+    "express": "^4.21.2",
     "less": "^4.2.0",
     "less-loader": "^12.2.0",
     "mqtt": "^5.10.2",
