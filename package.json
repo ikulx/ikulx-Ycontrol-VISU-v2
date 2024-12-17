@@ -20,7 +20,7 @@
     "crypto-browserify": "^3.12.1",
     "eslint-config-next": "^15.0.3",
     "express": "^4.21.1",
-    "less": "^4.2.0",
+    "less": "^4.2.1",
     "less-loader": "^12.2.0",
     "mqtt": "^5.10.2",
     "mysql2": "^3.11.4",
